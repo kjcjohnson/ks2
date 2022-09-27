@@ -1,7 +1,7 @@
 ;;;;
 ;;;; API functions for communicating with the child instance
 ;;;;
-(in-package #:com.kjcjohnson.ks3.runner)
+(in-package #:com.kjcjohnson.ks2.runner)
 
 (define-condition rpc-error () ())
 (define-condition swank-crash () ())

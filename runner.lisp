@@ -1,7 +1,7 @@
 ;;;;
-;;;; KS3 runner
+;;;; KS2 runner
 ;;;;
-(in-package #:com.kjcjohnson.ks3.runner)
+(in-package #:com.kjcjohnson.ks2.runner)
 
 (defun spawn-inferior-lisp (port-file)
   "Spawns an inferior lisp. Currently, just SBCL."
@@ -13,32 +13,12 @@
                              "--end-runtime-options"
 
                              "--eval"
-                             "(ql:quickload \"com.kjcjohnson.ks3.runner/helper\")"
+                             "(ql:quickload \"com.kjcjohnson.ks2.runner/helper\")"
                              "--eval"
                              (format nil
-                                     "(com.kjcjohnson.ks3.runner.helper:init-and-start-swank ~s)"
+                                     "(com.kjcjohnson.ks2.runner.helper:init-and-start-swank ~s)"
                                      port-file)
                              
-                             #|
-                             "--eval"
-                             "(format t \"STARTUP~%\")"
-                             "--eval"
-                             "(ql:quickload \"swank\")"
-                             "--eval"
-                             "(format t \"SWANK LOADED~%\")"
-                             "--eval"
-                             "(setf swank:*configure-emacs-indentation* nil)"
-                             "--eval"
-                             "(format t \"SWANK CONFIGURED~%\")"
-                             "--eval"
-                             (format nil
-                                     "(swank:start-server ~s :dont-close t)"
-                                     portfile)
-                             "--eval"
-                             "(format t \"SWANK STARTED~%\")"
-                             "--eval"
-                             "(loop (sleep 60))"
-                             |#
                              "--end-toplevel-options")
                        :output :interactive))
 

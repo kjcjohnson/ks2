@@ -1,7 +1,7 @@
 ;;;;
 ;;;; Child Lisp functionality
 ;;;;
-(in-package #:com.kjcjohnson.ks3.runner)
+(in-package #:com.kjcjohnson.ks2.runner)
 
 (defclass child-lisp ()
   ((process

@@ -1,7 +1,7 @@
 ;;;;
-;;;; Swank helper for the ks3 runner
+;;;; Swank helper for the ks2 runner
 ;;;;
-(defpackage #:com.kjcjohnson.ks3.runner.helper
+(defpackage #:com.kjcjohnson.ks2.runner.helper
   (:use :cl)
   (:local-nicknames (#:semgus #:com.kjcjohnson.synthkit.semgus)
                     (#:ast #:com.kjcjohnson.synthkit.ast)
@@ -13,7 +13,7 @@
   (:import-from #:swank
                 #:defslimefun))
 
-(in-package #:com.kjcjohnson.ks3.runner.helper)
+(in-package #:com.kjcjohnson.ks2.runner.helper)
 
 (defun init-and-start-swank (port-file)
   "Initialize and start a Swank server. Write the port to portfile."

@@ -1,7 +1,7 @@
 ;;;;
 ;;;; Benchmarking code
 ;;;;
-(in-package #:com.kjcjohnson.ks3.runner)
+(in-package #:com.kjcjohnson.ks2.runner)
 
 (defun start-solver (child-lisp problem-file solver)
   "Starts a solver and returns a promise for the result."
