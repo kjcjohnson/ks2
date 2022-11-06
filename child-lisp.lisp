@@ -209,5 +209,6 @@ if the continuation is not registered in the table yet."
 
 (defun terminate-child (child-lisp &key urgent)
   "Ends a child lisp session."
-  (bt:destroy-thread (child-lisp-response-thread child-lisp)) ; DANGEROUS! FIXME
+  (when (bt:thread-alive-p (child-lisp-response-thread child-lisp))
+    (bt:destroy-thread (child-lisp-response-thread child-lisp))) ; DANGEROUS! FIXME
   (uiop:terminate-process (child-lisp-process child-lisp) :urgent urgent))

@@ -54,9 +54,9 @@
   (rpc-call/promise child-lisp
                     `(helper:duet-solve ,problem-file ,@options)))
 
-(defun duet-solve (child-lisp problem-file)
+(defun duet-solve (child-lisp problem-file &key depth)
   (ok-or-fail (rpc-call/sync child-lisp
-                             `(helper:duet-solve ,problem-file))))
+                             `(helper:duet-solve ,problem-file :depth ,depth))))
 
 (defun frangel-solve/promise (child-lisp problem-file
                               &rest options
@@ -67,6 +67,15 @@
 (defun frangel-solve (child-lisp problem-file)
   (ok-or-fail (rpc-call/sync child-lisp
                              `(helper:frangel-solve ,problem-file))))
+(defun tde-solve/promise (child-lisp problem-file
+                           &rest options
+                           &key &allow-other-keys)
+  (rpc-call/promise child-lisp
+                    `(helper:tde-solve ,problem-file ,@options)))
+
+(defun tde-solve (child-lisp problem-file)
+  (ok-or-fail (rpc-call/sync child-lisp
+                             `(helper:tde-solve ,problem-file))))
 
 (defun force-gc (child-lisp)
   (ok-or-fail (rpc-call/sync child-lisp (helper:force-gc))))

@@ -3,6 +3,7 @@
 ;;;;
 (asdf:defsystem "com.kjcjohnson.ks2.runner"
   :depends-on ("swank-protocol"
+               "marshal"
                "uiop"
                "bordeaux-threads"
                "lparallel"

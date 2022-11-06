@@ -6,9 +6,10 @@
 (defun start-solver (child-lisp problem-file solver)
   "Starts a solver and returns a promise for the result."
   (ecase solver
-    (:enum (enum-solve/promise child-lisp problem-file))
-    (:duet (duet-solve/promise child-lisp problem-file))
-    (:frangel (frangel-solve/promise child-lisp problem-file))))
+    (:enum (enum-solve/promise child-lisp problem-file :max-depth 20))
+    (:duet (duet-solve/promise child-lisp problem-file :depth 20))
+    (:frangel (frangel-solve/promise child-lisp problem-file))
+    (:tde (tde-solve/promise child-lisp problem-file))))
 
 (defun internal-time-to-seconds (internal-time)
   "Converts internal time to seconds."
@@ -17,40 +18,88 @@
 (defun bytes-to-mebibytes (bytes)
   (/ bytes (* 1024 1024)))
 
-(defun get-metric (list what)
+(defparameter *symbol-timeout* "⌛")
+(defparameter *symbol-error* "💥")
+(defparameter *symbol-memory* "📈")
+(defparameter *symbol-unknown* "❓")
+(defparameter *symbol-no-solution* "🚫")
+
+(defun get-metric (list what &key decorative)
   (if (consp list)
       (ecase what
         (:solved? (first list))
-        (:time (format nil "~,2fs" (second list)))
+        (:time (cond ((and (null (first list)) decorative)
+                      *symbol-timeout*)
+                     ((and (first list) (string= (fourth list) "NIL") decorative)
+                      *symbol-no-solution*)
+                     (t
+                      (format nil "~,2fs" (second list)))))
         (:memory (format nil "~,3fMiB" (third list)))
         (:result (fourth list))
         (:exec-rate (format nil "~,0fp/s" (fifth list))))
-      list))
+      (if decorative
+          (case list
+            (:error *symbol-error*)
+            (:crash *symbol-memory*)
+            (otherwise *symbol-unknown*))
+          list)))
 
-(defun get-metric-for-solver (list what solver)
-  (get-metric (cdr (assoc solver list)) what))
+(defun get-metric-for-solver (list what solver &key decorative)
+  (get-metric (cdr (assoc solver list)) what :decorative decorative))
 
-(defun results-to-csv-string (results what)
+(defun results-to-csv-string (results what &key decorative)
   (with-output-to-string (s)
-    (format s "Benchmark,Enum,Duet,Frangel~%")
+    (format s "Benchmark,Enum,Duet,Frangel,TDE~%")
     (dolist (problem results)
       (format s
-              "~s,~s,~s,~s~%"
+              "~s,~s,~s,~s,~s~%"
               (first problem)
-              (get-metric-for-solver (cdr problem) what :enum)
-              (get-metric-for-solver (cdr problem) what :duet)
-              (get-metric-for-solver (cdr problem) what :frangel)))))
+              (get-metric-for-solver (cdr problem) what :enum
+                                     :decorative decorative)
+              (get-metric-for-solver (cdr problem) what :duet
+                                     :decorative decorative)
+              (get-metric-for-solver (cdr problem) what :frangel
+                                     :decorative decorative)
+              (get-metric-for-solver (cdr problem) what :tde
+                                     :decorative decorative)))))
 
-(defun write-all-results (results filename)
+(defun write-all-results (results filename &key (if-exists :supersede))
   (with-open-file (fs filename :direction :output
-                               :if-exists :overwrite
+                               :if-exists if-exists
                                :if-does-not-exist :create)
     (format fs "Solved?~%~a~%~%" (results-to-csv-string results :solved?))
     (format fs "Time~%~a~%~%" (results-to-csv-string results :time))
     (format fs "Peak Memory~%~a~%~%" (results-to-csv-string results :memory))
     (format fs "Execution Rate~%~a~%~%" (results-to-csv-string results :exec-rate))
-    (format fs "Result~%~a~%~%" (results-to-csv-string results :result))))
-    
+    (format fs "Result~%~a~%~%" (results-to-csv-string results :result))
+    (finish-output fs)))
+
+(defun write-summary-results (results filename &key (if-exists :supersede))
+  "Writes a summary of benchmark performance."
+  (with-open-file (fs filename :direction :output
+                               :if-exists if-exists
+                               :if-does-not-exist :create)
+    (format fs "~&Summary~%~a~%~%" (results-to-csv-string results :time
+                                                        :decorative t))
+    (finish-output fs)))
+
+(defun write-suite-results (results filename &key summary)
+  (with-open-file (fs filename :direction :output
+                               :if-exists :supersede
+                               :if-does-not-exist :create)
+    (format fs "Results~%")
+    (finish-output fs))
+
+  (dolist (suite-result results)
+    (with-open-file (fs filename :direction :output
+                                 :if-exists :append
+                                 :if-does-not-exist :create)
+      (format fs "~&~%Suite,~a~%" (car suite-result))
+      (finish-output fs))
+
+    (if summary
+        (write-summary-results (cdr suite-result) filename :if-exists :append)
+        (write-all-results (cdr suite-result) filename :if-exists :append))))
 
 (defun %run-benchmark (problem-file solver)
   "Runs a benchmark on a solver."
@@ -83,17 +132,17 @@
                                 nil))
                     (exec-count (get-execution-counter child-lisp))
                     (exec-rate (/ exec-count time)))
-               
-               
+
+
                (if solved?
                    (format t
-                           "; RESULT: ~s~%;   TIME: ~,2fs~%;   MAX MEM OFFSET: ~,3fMiB~%;   PPS: ~,2fprog/s~%~%"
+                           "~&; RESULT: ~s~%;   TIME: ~,2fs~%;   MAX MEM OFFSET: ~,3fMiB~%;   PPS: ~,2fprog/s~%~%"
                          result
                          time
                          memory
                          exec-rate)
                    (format t
-                           "; TIMEOUT after ~,2fs~%;   MAX MEM OFFSET: ~,3fMiB~%;   PPS: ~,2fprog/s~%~%"
+                           "~&; TIMEOUT after ~,2fs~%;   MAX MEM OFFSET: ~,3fMiB~%;   PPS: ~,2fprog/s~%~%"
                            time
                            memory
                            exec-rate))
@@ -116,12 +165,28 @@
                            "univ_1"
                            "univ_2"))
 
+(defparameter *suites* '("classic"
+                         "datatypes"
+                         "imperative"
+                         "integer-arithmetic"
+                         "non-deterministic"
+                         "regular-expressions/manually-constructed"
+                         "regular-expressions/alpharegex"))
+
 (defun qualify-problem (problem)
-  (merge-pathnames (concatenate 'string problem ".sexpr")
-                   #P"D:/temp/"))
+  (if (pathnamep problem)
+      problem
+      (merge-pathnames (concatenate 'string problem ".sexpr")
+                       #P"D:/temp/benchmarks/")))
+
+(defun qualify-suite (suite)
+  (if (pathnamep suite)
+      suite
+      (merge-pathnames (make-pathname :directory `(:relative ,suite))
+                       #P"D:/temp/benchmarks/")))
 
 (defun run-benchmark (problem solver)
-  (handler-case 
+  (handler-case
       (%run-benchmark (qualify-problem problem) solver)
     (rpc-error () :error)
     (swank-crash () :crash)
@@ -130,6 +195,25 @@
               "; **OTHER CONDITION: ~s~%"
               e)
       :other-error)))
+
+(defun run-suite (suite &optional (solver t))
+  "Runs a suite. If SOLVER is T, runs all solvers, otherwise whatever is passed."
+  (let ((solvers (if (eql t solver) *solvers* (list solver))))
+    (loop for problem in (uiop:directory-files (qualify-suite suite))
+          doing (format t "+++++ ~s +++++~%~%" problem)
+          collecting
+          (cons (pathname-name problem)
+                (loop for solver in solvers
+                      doing (format t "  --> ~a~%" solver)
+                      collecting
+                      (cons solver (run-benchmark problem solver)))))))
+
+(defun run-all-suites ()
+  "Runs all suites."
+  (loop for suite in *suites*
+        doing (format t "===== ~s =====~%~%" suite)
+        collecting
+        (cons suite (run-suite suite))))
 
 (defun run-all-benchmarks ()
   "Runs all benchmarks"
@@ -141,4 +225,4 @@
                     doing (format t "  --> ~a~%" solver)
                     collecting
                     (cons solver (run-benchmark problem solver))))))
-              
+

@@ -1,6 +1,10 @@
 ;;;;
 ;;;; Swank helper for the ks2 runner
 ;;;;
+(eval-when (:compile-toplevel :load-toplevel)
+  (when (find-package '#:com.kjcjohnson.ks2.runner.helper)
+    (delete-package '#:com.kjcjohnson.ks2.runner.helper)))
+
 (defpackage #:com.kjcjohnson.ks2.runner.helper
   (:use :cl)
   (:local-nicknames (#:semgus #:com.kjcjohnson.synthkit.semgus)
@@ -8,6 +12,7 @@
                     (#:enum #:com.kjcjohnson.tdp.enumerative)
                     (#:duet #:com.kjcjohnson.tdp.duet)
                     (#:frangel #:com.kjcjohnson.frangel)
+                    (#:tde #:com.kjcjohnson.tdp.top-down-enum)
                     (#:tdp-test #:com.kjcjohnson.tdp.test))
   (:export #:init-and-start-swank)
   (:import-from #:swank
@@ -52,12 +57,19 @@
                                              8
                                              max-depth)))))
 
-(defslimefun duet-solve (problem-file)
+(defslimefun duet-solve (problem-file &key depth)
   (let ((problem (semgus:load-semgus-problem problem-file)))
     (format nil "~s"
-            (duet::duet-solve problem))))
+            (duet::duet-solve problem :depth (if (null depth)
+                                                 8
+                                                 depth)))))
 
 (defslimefun frangel-solve (problem-file)
   (let ((problem (semgus:load-semgus-problem problem-file)))
     (format nil "~s"
             (frangel::fragment-search problem))))
+
+(defslimefun tde-solve (problem-file)
+  (let ((problem (semgus:load-semgus-problem problem-file)))
+    (format nil "~s"
+            (tde::top-down-enum-solve problem))))
