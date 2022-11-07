@@ -49,6 +49,7 @@
    :description "Selects a suite to run"
    :short #\u
    :long "suite"
+   :arg-parser #'identity
    :meta-var "SUITE"))
 
 ;;;
