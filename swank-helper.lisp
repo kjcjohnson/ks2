@@ -49,6 +49,7 @@
     (asdf:oos 'asdf:load-op "com.kjcjohnson.tdp/test" :force t)
     (push :ks2-bootstrapped *features*))
   (setf ast:*execution-counter* 0)
+  (trivial-garbage:gc :full t)
   t)
 
 (defslimefun enum-solve (problem-file &key max-depth)
