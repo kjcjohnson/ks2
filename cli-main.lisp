@@ -121,7 +121,7 @@
                                    (getf options :solver)
                                    (getf options :suite-root)))
             (outname (substitute #\_ #\/ (getf options :suite))))
-        (write-suite-results suite-data
+        '(write-suite-results suite-data
                              (concatenate 'string "data/" outname ".all.csv"))
         (write-suite-results suite-data
                              (concatenate 'string "data/" outname ".sum.csv")

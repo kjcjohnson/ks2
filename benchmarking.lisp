@@ -120,7 +120,8 @@
                              (setf max-memory dm)))
                    while (< (get-internal-real-time) kill-time)
                    doing (sleep 1)
-                   doing (format *trace-output* "."))
+                   doing (format *trace-output* ".")
+                   doing (force-output *trace-output*))
 
              (let* ((solved? (lparallel:fulfilledp result-promise))
                     (time (internal-time-to-seconds (- (get-internal-real-time)
