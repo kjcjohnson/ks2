@@ -121,11 +121,10 @@
                                    (getf options :solver)
                                    (getf options :suite-root)))
             (outname (substitute #\_ #\/ (getf options :suite))))
-        '(write-suite-results suite-data
-                             (concatenate 'string "data/" outname ".all.csv"))
-        (write-suite-results suite-data
-                             (concatenate 'string "data/" outname ".sum.csv")
-                             :summary t)))
+        (write-all-results suite-data
+                           (concatenate 'string "data/" outname ".all.csv"))
+        (write-summary-results suite-data
+                               (concatenate 'string "data/" outname ".sum.csv"))))
 
     (unless (null free-args)
       (format t "~&Benchmark: ~a~%" free-args)
