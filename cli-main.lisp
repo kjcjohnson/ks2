@@ -40,11 +40,15 @@
    :long "help")
   (:name :solver
    :description "Selects a solver to run"
-   :required t
    :short #\s
    :long "solver"
+   :default t
    :arg-parser #'solver-parser
-   :meta-var "SOLVER"))
+   :meta-var "SOLVER")
+  (:name :suite
+   :description "Selects a suite to run"
+   :long "suite"
+   :meta-var "SUITE"))
 
 ;;;
 ;;; Some of this file is yoinked from the unix-opts examples
@@ -101,6 +105,17 @@
     (format t "~&Selected solver: ~a~%"
             (getf options :solver))
 
-    (format t "~&Benchmark: ~a~%" free-args)
+    (when-option (options :suite)
+      (let ((suite-data (run-suite (getf options :suite)
+                                   (getf options :solver)))
+            (outname (substitute #\_ #\/ (getf options :suite))))
+        (write-suite-results suite-data
+                             (concatenate 'string "data/" outname ".all.csv"))
+        (write-suite-results suite-data
+                             (concatenate 'string "data/" outname ".sum.csv")
+                             :summary t)))
 
-    (run-benchmark (first free-args) (getf options :solver))))
+    (unless (null free-args)
+      (format t "~&Benchmark: ~a~%" free-args)
+
+      (run-benchmark (first free-args) (getf options :solver)))))
