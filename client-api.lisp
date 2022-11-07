@@ -78,4 +78,4 @@
                              `(helper:tde-solve ,problem-file))))
 
 (defun force-gc (child-lisp)
-  (ok-or-fail (rpc-call/sync child-lisp (helper:force-gc))))
+  (ok-or-fail (rpc-call/sync child-lisp '(helper:force-gc))))

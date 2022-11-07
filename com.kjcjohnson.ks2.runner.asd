@@ -7,8 +7,7 @@
                "uiop"
                "bordeaux-threads"
                "lparallel"
-               "unix-opts"
-               "com.kjcjohnson.ks2.runner/helper")
+               "unix-opts")
   :build-operation "program-op"
   :build-pathname "bin/ks2"
   :entry-point "COM.KJCJOHNSON.KS2.RUNNER:MAIN"
@@ -24,4 +23,7 @@
   :depends-on ("com.kjcjohnson.tdp/test"
                "swank"
                "trivial-garbage")
+  :build-operation "image-op"
+  :build-pathname "bin/ks2-runner"
+  :serial t
   :components ((:file "swank-helper")))

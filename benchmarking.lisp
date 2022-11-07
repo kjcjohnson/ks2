@@ -173,10 +173,16 @@
                          "regular-expressions/manually-constructed"
                          "regular-expressions/alpharegex"))
 
+(defun ensure-ends-with (string suffix)
+  "Makes sure STRING ends with SUFFIX"
+  (if (str:ends-with? suffix string)
+      string
+      (concatenate 'string string suffix)))
+
 (defun qualify-problem (problem)
   (if (pathnamep problem)
       problem
-      (merge-pathnames (concatenate 'string problem ".sexpr")
+      (merge-pathnames (ensure-ends-with problem ".sexpr")
                        #P"D:/temp/benchmarks/")))
 
 (defun qualify-suite (suite)

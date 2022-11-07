@@ -101,4 +101,6 @@
     (format t "~&Selected solver: ~a~%"
             (getf options :solver))
 
-    (format t "~&Benchmark: ~a~%" free-args)))
+    (format t "~&Benchmark: ~a~%" free-args)
+
+    (run-benchmark (first free-args) (getf options :solver))))
