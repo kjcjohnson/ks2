@@ -189,7 +189,9 @@
   (if (pathnamep suite)
       suite
       (merge-pathnames (make-pathname :directory `(:relative ,suite))
-                       suite-root)))
+                       (if (pathnamep suite-root)
+                           suite-root
+                           (ensure-ends-with suite-root "/")))))
 
 (defun run-benchmark (problem solver)
   (handler-case
