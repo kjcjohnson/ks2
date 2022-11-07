@@ -7,7 +7,8 @@
                "uiop"
                "bordeaux-threads"
                "lparallel"
-               "unix-opts")
+               "unix-opts"
+               "str")
   :build-operation "program-op"
   :build-pathname "bin/ks2"
   :entry-point "COM.KJCJOHNSON.KS2.RUNNER:MAIN"
