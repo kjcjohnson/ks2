@@ -105,6 +105,9 @@
     (format t "~&Selected solver: ~a~%"
             (getf options :solver))
 
+    (format t "~&Selected suite: ~a~%"
+            (getf options :suite))
+
     (when-option (options :suite)
       (let ((suite-data (run-suite (getf options :suite)
                                    (getf options :solver)))
