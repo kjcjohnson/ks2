@@ -47,6 +47,7 @@
    :meta-var "SOLVER")
   (:name :suite
    :description "Selects a suite to run"
+   :short #\u
    :long "suite"
    :meta-var "SUITE"))
 
