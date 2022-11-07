@@ -185,11 +185,11 @@
       (merge-pathnames (ensure-ends-with problem ".sexpr")
                        #P"D:/temp/benchmarks/")))
 
-(defun qualify-suite (suite)
+(defun qualify-suite (suite suite-root)
   (if (pathnamep suite)
       suite
       (merge-pathnames (make-pathname :directory `(:relative ,suite))
-                       #P"D:/temp/benchmarks/")))
+                       suite-root)))
 
 (defun run-benchmark (problem solver)
   (handler-case
@@ -202,10 +202,10 @@
               e)
       :other-error)))
 
-(defun run-suite (suite &optional (solver t))
+(defun run-suite (suite &optional (solver t) (suite-root #P"D:/temp/benchmarks/"))
   "Runs a suite. If SOLVER is T, runs all solvers, otherwise whatever is passed."
   (let ((solvers (if (eql t solver) *solvers* (list solver))))
-    (loop for problem in (uiop:directory-files (qualify-suite suite))
+    (loop for problem in (uiop:directory-files (qualify-suite suite suite-root))
           doing (format t "+++++ ~s +++++~%~%" problem)
           collecting
           (cons (pathname-name problem)

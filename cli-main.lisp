@@ -47,10 +47,14 @@
    :meta-var "SOLVER")
   (:name :suite
    :description "Selects a suite to run"
-   :short #\u
    :long "suite"
    :arg-parser #'identity
-   :meta-var "SUITE"))
+   :meta-var "SUITE")
+  (:name :suite-root
+   :description "Root directory of suite data"
+   :long "suite-root"
+   :arg-parser #'identity
+   :meta-var "ROOT"))
 
 ;;;
 ;;; Some of this file is yoinked from the unix-opts examples
@@ -114,7 +118,8 @@
 
     (when-option (options :suite)
       (let ((suite-data (run-suite (getf options :suite)
-                                   (getf options :solver)))
+                                   (getf options :solver)
+                                   (getf options :suite-root)))
             (outname (substitute #\_ #\/ (getf options :suite))))
         (write-suite-results suite-data
                              (concatenate 'string "data/" outname ".all.csv"))
