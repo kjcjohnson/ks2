@@ -99,6 +99,8 @@
         (opts:missing-required-option (con)
           (fatal-msg "~a~%" con)))
 
+    (format t "Options: ~a~%" options)
+    
     (when-option (options :help)
       (print-help)
       (uiop:quit))
