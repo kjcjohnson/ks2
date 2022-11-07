@@ -47,8 +47,8 @@
   (unless (find :ks2-bootstrapped *features*)
     (proclaim '(optimize (speed 3) (debug 0)))
     (asdf:oos 'asdf:load-op "com.kjcjohnson.tdp/test" :force t)
-    (setf ast:*execution-counter* 0)
     (push :ks2-bootstrapped *features*))
+  (setf ast:*execution-counter* 0)
   t)
 
 (defslimefun enum-solve (problem-file &key max-depth)
