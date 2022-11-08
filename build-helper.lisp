@@ -3,8 +3,9 @@
 ;;;;
 (require 'asdf)
 
-(defun build-runner ()
+(defun build-runner (&key disable-smt)
   "Builds the runner image"
+  (when disable-smt (push :synthkit-disable-smt-solver *features*))
   (proclaim '(optimize (speed 3) (debug 0)))
   (ql:quickload "com.kjcjohnson.tdp/test")
   (asdf:oos 'asdf:load-op "com.kjcjohnson.tdp/test" :force t)
