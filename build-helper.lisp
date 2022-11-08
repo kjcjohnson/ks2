@@ -6,8 +6,9 @@
 (defun build-runner (&key disable-smt)
   "Builds the runner image"
   (when disable-smt (push :synthkit-disable-smt-solver *features*))
-  (proclaim '(optimize (speed 3) (debug 0)))
+  (format t "~&*****XXFEATURES: ~S~%" *features*) 
   (ql:quickload "com.kjcjohnson.tdp/test")
+  (proclaim '(optimize (speed 3) (debug 0)))
   (asdf:oos 'asdf:load-op "com.kjcjohnson.tdp/test" :force t)
   (asdf:oos 'asdf:image-op "com.kjcjohnson.ks2.runner/helper"))
 
