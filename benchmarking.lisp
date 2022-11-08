@@ -151,7 +151,7 @@
     (unless (null child-lisp)
       (terminate-child child-lisp :urgent t)))))
 
-(defparameter *solvers* '(:enum :duet :frangel))
+(defparameter *solvers* '(:enum :duet :frangel :tde))
 
 (defparameter *problems* '("pp1a"
                            "pp2a"
