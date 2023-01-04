@@ -181,7 +181,7 @@
       (concatenate 'string string suffix)))
 
 (defun qualify-problem (problem)
-  (if (pathnamep problem)
+  (if (or (pathnamep problem) (uiop:file-exists-p problem))
       problem
       (merge-pathnames (ensure-ends-with problem ".sexpr")
                        #P"D:/temp/benchmarks/")))
