@@ -128,9 +128,6 @@ if the continuation is not registered in the table yet."
                                       (third response)
                                       (second response)))
     (:debug
-     (setf (swank-protocol:connection-log-p
-            (child-lisp-swank-connection child-lisp))
-           t)
      (format *trace-output* "; ERROR IN CHILD LISP~%")
      (dolist (msg (fourth response))
        (format *trace-output* "; --> ~a~%" msg))
