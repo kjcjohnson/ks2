@@ -128,6 +128,9 @@ if the continuation is not registered in the table yet."
                                       (third response)
                                       (second response)))
     (:debug
+     (setf (swank-protocol:connection-log-p
+            (child-lisp-swank-connection child-lisp))
+           t)
      (format *trace-output* "; ERROR IN CHILD LISP~%")
      (dolist (msg (fourth response))
        (format *trace-output* "; --> ~a~%" msg))
@@ -144,7 +147,8 @@ if the continuation is not registered in the table yet."
        (force-output *trace-output*)))
     (:debug-activate
      (format t "; DEBUG ACTIVATE: ~s~%" response)
-     (rpc-call/sync child-lisp '(swank:throw-to-toplevel)))
+     (rpc-call/async child-lisp '(swank:throw-to-toplevel) #'identity)
+     (format t "; --> Threw to toplevel~%"))
     (:new-features nil)
     (otherwise
      (format t "; OTHER MESSAGE: ~s~%" response))))
