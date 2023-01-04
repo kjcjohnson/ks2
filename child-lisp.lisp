@@ -133,11 +133,17 @@ if the continuation is not registered in the table yet."
        (format *trace-output* "; --> ~a~%" msg))
      (dolist (frame (sixth response))
        (format *trace-output* ";  FRAME [~s]: ~s~%" (first frame) (second frame)))
+     (format *trace-output* "; Continuations: ~s~%" (seventh response))
      (dolist (continuation (seventh response))
+       (format *trace-output* "; --> Processing ~s..." continuation)
+       (force-output *trace-output*)
        (%process-continuation-response child-lisp
                                        continuation
-                                       (%make-error-response "Error in RPC"))))
+                                       (%make-error-response "Error in RPC"))
+       (format *trace-output* "done.~%")
+       (force-output *trace-output*)))
     (:debug-activate
+     (format t "; DEBUG ACTIVATE: ~s~%" response)
      (rpc-call/sync child-lisp '(swank:throw-to-toplevel)))
     (:new-features nil)
     (otherwise
