@@ -27,6 +27,10 @@
   "Gets the execution counter in a child lisp environment."
   (ok-or-fail (rpc-call/sync child-lisp '(helper:get-execution-counter))))
 
+(defun get-statistics (child-lisp)
+  "Gets statistics from a child lisp environment"
+  (ok-or-fail (rpc-call/sync child-lisp '(helper:get-statistics))))
+
 (defun bootstrap-tdp (child-lisp)
   "Bootstraps the TDP stuff in the child environment."
   (ok-or-fail (rpc-call/sync child-lisp '(helper:bootstrap-tdp))))
@@ -79,3 +83,9 @@
 
 (defun force-gc (child-lisp)
   (ok-or-fail (rpc-call/sync child-lisp '(helper:force-gc))))
+
+(defun get-gc-run-time (child-lisp)
+  (ok-or-fail (rpc-call/sync child-lisp '(helper:get-gc-run-time))))
+
+(defun load-problem-file (child-lisp problem-file)
+  (ok-or-fail (rpc-call/sync child-lisp `(helper:load-problem-file ,problem-file))))

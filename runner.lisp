@@ -3,7 +3,7 @@
 ;;;;
 (in-package #:com.kjcjohnson.ks2.runner)
 
-(defun spawn-inferior-lisp (port-file &key image)
+(defun spawn-inferior-lisp (port-file &key image (output :interactive))
   "Spawns an inferior lisp. Currently, just SBCL."
   (uiop:launch-program (list (if (null image)
                                  "sbcl"
@@ -24,7 +24,7 @@
                                      port-file)
 
                              "--end-toplevel-options")
-                       :output :interactive))
+                       :output (or output :interactive)))
 
 (defun find-inferior-image ()
   "Looks for an inferior image."
@@ -41,8 +41,13 @@
       (t
        nil))))
 
+(defun %maybe-process-characters (stream callback)
+  (loop for c = (read-char-no-hang stream nil)
+        unless c do (return) end
+          when (and c callback)
+            do (funcall callback (make-string 1 :initial-element c))))
 
-(defun swank-spawn ()
+(defun swank-spawn (&key output output-callback error error-callback status-callback)
   "Spawns an inferior lisp with a SWANK connection"
   (let ((portfile (uiop:tmpize-pathname
                    (merge-pathnames "portfile"
@@ -50,10 +55,22 @@
     (delete-file portfile)
     (unwind-protect
          (let ((il-conn (spawn-inferior-lisp portfile
-                                             :image (find-inferior-image))))
+                                             :image (find-inferior-image)
+                                             :output output)))
+           (when status-callback
+             (funcall status-callback "Waiting for SWANK connection..."))
            (loop
              for i from 0 to 30
+             doing (format t ".")
              doing (sleep 1)
+             doing (when (eql :stream output)
+                     (%maybe-process-characters
+                      (uiop:process-info-output il-conn)
+                      output-callback))
+             doing (when (eql :stream error)
+                     (%maybe-process-characters
+                      (uiop:process-info-error-output il-conn)
+                      error-callback))
              until (uiop:file-exists-p portfile))
            (let* ((port (with-open-file (pfs portfile :direction :input)
                           (read pfs)))

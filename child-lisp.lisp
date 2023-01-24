@@ -37,7 +37,11 @@ no registered continuation. Useful if the response arrives early.")
     :initarg :connection-error
     :reader child-lisp-connection-error
     :writer (setf %child-lisp-connection-error)
-    :documentation "Flag to signal if the SWANK connection is broken or errored."))
+    :documentation "Flag to signal if the SWANK connection is broken or errored.")
+   (debug-callback
+    :initarg :debug-callback
+    :accessor child-lisp-debug-callback
+    :documentation "Function that is called with debug strings."))
   (:default-initargs
    :process (error "Process is required.")
    :port (error "Port is required.")
@@ -45,7 +49,10 @@ no registered continuation. Useful if the response arrives early.")
    :continuation-table (make-hash-table)
    :immediate-result-table (make-hash-table)
    :result-lock (bt:make-recursive-lock)
-   :connection-error nil)
+   :connection-error nil
+   :debug-callback #'(lambda (s)
+                       (format *trace-output* "~a" s)
+                       (force-output *trace-output*)))
   (:documentation "Holder for information about a running child lisp process
 and its connection via SWANK."))
 
@@ -128,11 +135,14 @@ if the continuation is not registered in the table yet."
                                       (third response)
                                       (second response)))
     (:debug
-     (format *trace-output* "; ERROR IN CHILD LISP~%")
-     (dolist (msg (fourth response))
-       (format *trace-output* "; --> ~a~%" msg))
-     (dolist (frame (sixth response))
-       (format *trace-output* ";  FRAME [~s]: ~s~%" (first frame) (second frame)))
+     (funcall
+      (child-lisp-debug-callback child-lisp)
+      (with-output-to-string (s)
+        (format s "; ERROR IN CHILD LISP~%")
+        (dolist (msg (fourth response))
+          (format s "; --> ~a~%" msg))
+        (dolist (frame (sixth response))
+          (format s ";  FRAME [~s]: ~s~%" (first frame) (second frame)))))
      (format *trace-output* "; Continuations: ~s~%" (seventh response))
      (dolist (continuation (seventh response))
        (format *trace-output* "; --> Processing ~s..." continuation)

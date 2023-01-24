@@ -43,6 +43,19 @@
 (defslimefun force-gc ()
   (trivial-garbage:gc :full t))
 
+(defslimefun get-gc-run-time ()
+  #+sbcl sb-ext:*gc-run-time*
+  #-sbcl nil)
+
+(defslimefun get-statistics ()
+  (list
+   :dynamic-space-used (sb-kernel:dynamic-usage)
+   :dynamic-space-total (sb-ext:dynamic-space-size)
+   :gc-run-time sb-ext:*gc-run-time*
+   :execution-counter ast:*execution-counter*
+   :internal-real-time (get-internal-real-time)
+   :internal-run-time (get-internal-run-time)))
+
 (defslimefun bootstrap-tdp ()
   (unless (find :ks2-bootstrapped *features*)
     (proclaim '(optimize (speed 3) (debug 0)))
@@ -52,8 +65,16 @@
   (trivial-garbage:gc :full t)
   t)
 
+(defvar *problem-file* nil "The current loaded problem file")
+
+(defun maybe-load-problem-file (problem-file)
+  "Loads a problem file if specified, or falls back to *PROBLEM-FILE*"
+  (if problem-file
+      (semgus:load-semgus-problem problem-file)
+      *problem-file*))
+
 (defslimefun enum-solve (problem-file &key max-depth)
-  (let ((problem (semgus:load-semgus-problem problem-file)))
+  (let ((problem (maybe-load-problem-file problem-file)))
     (format nil "~s"
             (enum::enum-solve problem
                               :max-depth (if (null max-depth)
@@ -61,18 +82,22 @@
                                              max-depth)))))
 
 (defslimefun duet-solve (problem-file &key depth)
-  (let ((problem (semgus:load-semgus-problem problem-file)))
+  (let ((problem (maybe-load-problem-file problem-file)))
     (format nil "~s"
             (duet::duet-solve problem :depth (if (null depth)
                                                  8
                                                  depth)))))
 
 (defslimefun frangel-solve (problem-file)
-  (let ((problem (semgus:load-semgus-problem problem-file)))
+  (let ((problem (maybe-load-problem-file problem-file)))
     (format nil "~s"
             (frangel::fragment-search problem))))
 
 (defslimefun tde-solve (problem-file)
-  (let ((problem (semgus:load-semgus-problem problem-file)))
+  (let ((problem (maybe-load-problem-file problem-file)))
     (format nil "~s"
             (tde::top-down-enum-solve problem))))
+
+(defslimefun load-problem-file (problem-file)
+  (setf *problem-file* (semgus:load-semgus-problem problem-file))
+  t)
