@@ -16,21 +16,28 @@
      :frangel)
     ((string= text "duet")
      :duet)
-    ((string= text "enum")
+    ((or (string= text "enum") (string= text "bottom-up-enum"))
      :enum)
-    ((string= text "tde")
+    ((string= text "top-down-enum")
      :tde)
     ((string= text "random")
      :random)
     (t
+     (format *error-output*
+             "Available solvers: ~{~a ~}"
+             '("bottom-up-enum"
+               #-ks2-public-release "duet"
+               #-ks2-public-release "frangel"
+               "top-down-enum"
+               "random"))
      (error 'enum-arg-parser-failed
              :raw-arg text
              :option :solver
              :available-options
-             '("enum"
+             '("bottom-up-enum"
                "duet"
                "frangel"
-               "tde"
+               "top-down-enum"
                "random")))))
 
 (opts:define-opts
@@ -45,11 +52,13 @@
    :default t
    :arg-parser #'solver-parser
    :meta-var "SOLVER")
+  #-ks2-public-release
   (:name :suite
    :description "Selects a suite to run"
    :long "suite"
    :arg-parser #'identity
    :meta-var "SUITE")
+  #-ks2-public-release
   (:name :suite-root
    :description "Root directory of suite data"
    :long "suite-root"
@@ -104,15 +113,18 @@
         (opts:missing-required-option (con)
           (fatal-msg "~a~%" con)))
 
+    #-ks2-public-release
     (format t "Options: ~a~%" options)
     
     (when-option (options :help)
       (print-help)
       (uiop:quit))
 
+    #-ks2-public-release
     (format t "~&Selected solver: ~a~%"
             (getf options :solver))
 
+    #-ks2-public-release
     (format t "~&Selected suite: ~a~%"
             (getf options :suite))
 
