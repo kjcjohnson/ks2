@@ -12,7 +12,8 @@
   (asdf:oos 'asdf:load-op "com.kjcjohnson.tdp/test" :force t)
   (asdf:oos 'asdf:image-op "com.kjcjohnson.ks2.runner/helper"))
 
-(defun build-app ()
+(defun build-app (&key public-release)
   "Builds the controller app"
+  (when public-release (push :ks2-public-release *features*))
   (ql:quickload "com.kjcjohnson.ks2.runner")
   (asdf:oos 'asdf:program-op "com.kjcjohnson.ks2.runner"))
