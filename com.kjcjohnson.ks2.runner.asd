@@ -21,7 +21,8 @@
                (:file "cli-main")))
 
 (asdf:defsystem "com.kjcjohnson.ks2.runner/helper"
-  :depends-on ("com.kjcjohnson.tdp/test"
+  :depends-on ("com.kjcjohnson.tdp/ks2"
+               "com.kjcjohnson.ks2/solver-api"
                "swank"
                "trivial-garbage")
   :build-operation "image-op"

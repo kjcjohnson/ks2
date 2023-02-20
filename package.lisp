@@ -13,7 +13,14 @@
            #:duet-solve
            #:frangel-solve
            #:tde-solve
-           #:load-problem-file))
+           #:load-problem-file)
+  (:export #:list-solvers
+           #:solver-name
+           #:solver-symbol
+           #:solver-description
+           #:solver-action
+           #:solver-options
+           #:solve-problem))
 
 (defpackage #:com.kjcjohnson.ks2.runner
   (:use #:cl)

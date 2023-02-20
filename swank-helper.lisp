@@ -9,11 +9,7 @@
   (:use :cl)
   (:local-nicknames (#:semgus #:com.kjcjohnson.synthkit.semgus)
                     (#:ast #:com.kjcjohnson.synthkit.ast)
-                    (#:enum #:com.kjcjohnson.tdp.enumerative)
-                    (#:duet #:com.kjcjohnson.tdp.duet)
-                    (#:frangel #:com.kjcjohnson.frangel)
-                    (#:tde #:com.kjcjohnson.tdp.top-down-enum)
-                    (#:tdp-test #:com.kjcjohnson.tdp.test))
+                    (#:solver-api #:com.kjcjohnson.ks2.solver-api))
   (:export #:init-and-start-swank)
   (:import-from #:swank
                 #:defslimefun))
@@ -73,31 +69,33 @@
       (semgus:load-semgus-problem problem-file)
       *problem-file*))
 
-(defslimefun enum-solve (problem-file &key max-depth)
-  (let ((problem (maybe-load-problem-file problem-file)))
-    (format nil "~s"
-            (enum::enum-solve problem
-                              :max-depth (if (null max-depth)
-                                             8
-                                             max-depth)))))
-
-(defslimefun duet-solve (problem-file &key depth)
-  (let ((problem (maybe-load-problem-file problem-file)))
-    (format nil "~s"
-            (duet::duet-solve problem :depth (if (null depth)
-                                                 8
-                                                 depth)))))
-
-(defslimefun frangel-solve (problem-file)
-  (let ((problem (maybe-load-problem-file problem-file)))
-    (format nil "~s"
-            (frangel::fragment-search problem))))
-
-(defslimefun tde-solve (problem-file)
-  (let ((problem (maybe-load-problem-file problem-file)))
-    (format nil "~s"
-            (tde::top-down-enum-solve problem))))
-
 (defslimefun load-problem-file (problem-file)
   (setf *problem-file* (semgus:load-semgus-problem problem-file))
   t)
+
+;;;
+;;; Solver API RPCs
+;;;
+(defslimefun list-solvers ()
+  (solver-api:list-solvers))
+
+(defslimefun solver-name (solver-designator)
+  (solver-api:solver-name solver-designator))
+
+(defslimefun solver-symbol (solver-designator)
+  (solver-api:solver-symbol solver-designator))
+
+(defslimefun solver-description (solver-designator)
+  (solver-api:solver-description solver-designator))
+
+(defslimefun solver-action (solver-designator)
+  (solver-api:solver-action solver-designator))
+
+(defslimefun solver-options (solver-designator)
+  (solver-api:solver-options solver-designator))
+
+(defslimefun solve-problem (solver-designator problem-file
+                                              &rest options &key &allow-other-keys)
+  (let ((problem (maybe-load-problem-file problem-file)))
+    (format nil "~s"
+            (apply #'solver-api:solve-problem solver-designator problem options))))

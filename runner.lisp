@@ -16,7 +16,7 @@
 
                              "--eval"
                              (if (null image)
-                                 "(ql:quickload \"com.kjcjohnson.ks2.runner/helper\")"
+                                 "(asdf:oos 'asdf:load-op \"com.kjcjohnson.ks2.runner/helper\")"
                                  "(push :ks2-bootstrapped *features*)")
                              "--eval"
                              (format nil

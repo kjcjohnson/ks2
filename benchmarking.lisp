@@ -6,10 +6,18 @@
 (defun start-solver (child-lisp problem-file solver)
   "Starts a solver and returns a promise for the result."
   (ecase solver
-    (:enum (enum-solve/promise child-lisp problem-file :max-depth 20))
-    (:duet (duet-solve/promise child-lisp problem-file :depth 20))
-    (:frangel (frangel-solve/promise child-lisp problem-file))
-    (:tde (tde-solve/promise child-lisp problem-file))))
+    (:enum
+     (solve-problem/promise child-lisp :bottom-up-enum problem-file
+                                       :max-depth 20))
+    (:duet
+     (solve-problem/promise child-lisp :duet problem-file
+                                       :depth 20))
+    (:frangel
+     (solve-problem/promise child-lisp :frangel problem-file))
+    (:random
+     (solve-problem/promise child-lisp :random problem-file))
+    (:tde
+     (solve-problem/promise child-lisp :top-down-enum problem-file))))
 
 (defun internal-time-to-seconds (internal-time)
   "Converts internal time to seconds."
@@ -234,4 +242,3 @@
                     doing (format t "  --> ~a~%" solver)
                     collecting
                     (cons solver (run-benchmark problem solver))))))
-

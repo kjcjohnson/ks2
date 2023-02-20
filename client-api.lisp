@@ -40,47 +40,6 @@
   #'(lambda (result)
       (lparallel:fulfill promise (ok-or-fail result))))
 
-(defun enum-solve/promise (child-lisp problem-file
-                           &rest options
-                           &key max-depth &allow-other-keys)
-  (declare (ignore max-depth))
-  (rpc-call/promise child-lisp
-                    `(helper:enum-solve ,problem-file ,@options)))
-
-(defun enum-solve (child-lisp problem-file &key max-depth)
-  (ok-or-fail (rpc-call/sync child-lisp
-                             `(helper:enum-solve ,problem-file
-                                                 :max-depth ,max-depth))))
-
-(defun duet-solve/promise (child-lisp problem-file
-                           &rest options
-                           &key &allow-other-keys)
-  (rpc-call/promise child-lisp
-                    `(helper:duet-solve ,problem-file ,@options)))
-
-(defun duet-solve (child-lisp problem-file &key depth)
-  (ok-or-fail (rpc-call/sync child-lisp
-                             `(helper:duet-solve ,problem-file :depth ,depth))))
-
-(defun frangel-solve/promise (child-lisp problem-file
-                              &rest options
-                              &key &allow-other-keys)
-  (rpc-call/promise child-lisp
-                    `(helper:frangel-solve ,problem-file ,@options)))
-
-(defun frangel-solve (child-lisp problem-file)
-  (ok-or-fail (rpc-call/sync child-lisp
-                             `(helper:frangel-solve ,problem-file))))
-(defun tde-solve/promise (child-lisp problem-file
-                           &rest options
-                           &key &allow-other-keys)
-  (rpc-call/promise child-lisp
-                    `(helper:tde-solve ,problem-file ,@options)))
-
-(defun tde-solve (child-lisp problem-file)
-  (ok-or-fail (rpc-call/sync child-lisp
-                             `(helper:tde-solve ,problem-file))))
-
 (defun force-gc (child-lisp)
   (ok-or-fail (rpc-call/sync child-lisp '(helper:force-gc))))
 
@@ -89,3 +48,43 @@
 
 (defun load-problem-file (child-lisp problem-file)
   (ok-or-fail (rpc-call/sync child-lisp `(helper:load-problem-file ,problem-file))))
+
+;;;
+;;; Solver API
+;;;
+(defun list-solvers (child-lisp)
+  (ok-or-fail
+   (rpc-call/sync child-lisp '(helper:list-solvers))))
+
+(defun solver-name (child-lisp solver-designator)
+  (ok-or-fail
+   (rpc-call/sync child-lisp `(helper:solver-name ,solver-designator))))
+
+(defun solver-symbol (child-lisp solver-designator)
+  (ok-or-fail
+   (rpc-call/sync child-lisp `(helper:solver-symbol ,solver-designator))))
+
+(defun solver-description (child-lisp solver-designator)
+  (ok-or-fail
+   (rpc-call/sync child-lisp `(helper:solver-description ,solver-designator))))
+
+(defun solver-action (child-lisp solver-designator)
+  (ok-or-fail
+   (rpc-call/sync child-lisp `(helper:solver-action ,solver-designator))))
+
+(defun solver-options (child-lisp solver-designator)
+  (ok-or-fail
+   (rpc-call/sync child-lisp `(helper:solver-options ,solver-designator))))
+
+(defun solve-problem (child-lisp solver-designator problem-file
+                      &rest options &key &allow-other-keys)
+  (ok-or-fail
+   (rpc-call/sync
+    child-lisp
+    `(helper:solve-problem ,solver-designator ,problem-file ,@options))))
+
+(defun solve-problem/promise (child-lisp solver-designator problem-file
+                              &rest options &key &allow-other-keys)
+  (rpc-call/promise
+   child-lisp
+   `(helper:solve-problem ,solver-designator ,problem-file ,@options)))
