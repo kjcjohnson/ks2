@@ -93,6 +93,18 @@
 
 (defun main ()
   "Main CLI entrypoint"
+  #+ks2-public-release
+  (progn
+    (format *error-output*
+            "WARNING: This solver suite is currently experimental and prereleased.~%")
+    (format *error-output*
+            "WARNING:  - Command-line arguments will change in the future.")
+    (format *error-output*
+            "WARNING:  - The output format of this command is not stable.~%")
+    (format *error-output*
+            "WARNING:  - Synthesis algorithms are under active development.~%")
+    (format *error-output*
+            "WARNING: This tool is for evaluation and demonstration purposes only.~%"))
 
   (multiple-value-bind (options free-args)
       (handler-case
@@ -115,7 +127,7 @@
 
     #-ks2-public-release
     (format t "Options: ~a~%" options)
-    
+
     (when-option (options :help)
       (print-help)
       (uiop:quit))
