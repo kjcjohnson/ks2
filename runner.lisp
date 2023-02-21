@@ -5,6 +5,8 @@
 
 (defun spawn-inferior-lisp (port-file &key image (output :interactive))
   "Spawns an inferior lisp. Currently, just SBCL."
+  (debug-msg "===== SPAWNING CORE =====~% - PORT-FILE: ~a~% - IMAGE: ~a~%"
+             port-file image)
   (uiop:launch-program (list (if (null image)
                                  "sbcl"
                                  image)
@@ -52,16 +54,19 @@
   (let ((portfile (uiop:tmpize-pathname
                    (merge-pathnames "portfile"
                                     (uiop:temporary-directory)))))
-    (delete-file portfile)
+    (when (uiop:file-exists-p portfile)
+      (delete-file portfile))
     (unwind-protect
          (let ((il-conn (spawn-inferior-lisp portfile
                                              :image (find-inferior-image)
                                              :output output)))
+           (debug-msg "===== WAITING FOR SWANK =====")
            (when status-callback
              (funcall status-callback "Waiting for SWANK connection..."))
            (loop
              for i from 0 to 30
              doing (format t ".")
+             doing (force-output)
              doing (sleep 1)
              doing (when (eql :stream output)
                      (%maybe-process-characters
@@ -84,5 +89,7 @@
                                          :port port
                                          :swank-connection swank-conn)))
                (init-swank-response-loop spawn)
+               (debug-msg "===== CORE SPAWNED =====")
                spawn)))
-      (delete-file portfile))))
+      (when (uiop:file-exists-p portfile)
+        (delete-file portfile)))))

@@ -52,18 +52,25 @@
    :default t
    :arg-parser #'solver-parser
    :meta-var "SOLVER")
-  #-ks2-public-release
   (:name :suite
    :description "Selects a suite to run"
    :long "suite"
    :arg-parser #'identity
    :meta-var "SUITE")
-  #-ks2-public-release
   (:name :suite-root
    :description "Root directory of suite data"
    :long "suite-root"
    :arg-parser #'identity
-   :meta-var "ROOT"))
+   :meta-var "ROOT")
+  (:name :debug
+   :description "Enables extra tool debug information"
+   :long "--debug"))
+
+(defparameter *ks2-runner-debug* nil "Enables extra debug information about ks2")
+
+(defmacro when-debug (&body body)
+  `(when *ks2-runner-debug*
+     ,@body))
 
 ;;;
 ;;; Some of this file is yoinked from the unix-opts examples
@@ -91,20 +98,28 @@
   (print-help)
   (opts:exit 1))
 
+(defun debug-msg (format &rest opts)
+  "Prints a debug message if the debug flag is set."
+  (when-debug
+    (format *error-output* "~&debug: ")
+    (apply #'format *error-output* format opts)
+    (format *error-output* "~%")
+    (finish-output *error-output*)))
+
 (defun main ()
   "Main CLI entrypoint"
   #+ks2-public-release
   (progn
     (format *error-output*
-            "WARNING: This solver suite is currently experimental and prereleased.~%")
+            "warning: This solver suite is currently experimental and prereleased.~%")
     (format *error-output*
-            "WARNING:  - Command-line arguments will change in the future.")
+            "warning:  - Command-line arguments will change in the future.~%")
     (format *error-output*
-            "WARNING:  - The output format of this command is not stable.~%")
+            "warning:  - The output format of this command is not stable.~%")
     (format *error-output*
-            "WARNING:  - Synthesis algorithms are under active development.~%")
+            "warning:  - Synthesis algorithms are under active development.~%")
     (format *error-output*
-            "WARNING: This tool is for evaluation and demonstration purposes only.~%"))
+            "warning: This tool is for evaluation and demonstration purposes only.~%"))
 
   (multiple-value-bind (options free-args)
       (handler-case
@@ -125,20 +140,20 @@
         (opts:missing-required-option (con)
           (fatal-msg "~a~%" con)))
 
-    #-ks2-public-release
-    (format t "Options: ~a~%" options)
+    (setf *ks2-runner-debug* (getf options :debug))
+
+    (debug-msg "Options: ~a~%" options)
 
     (when-option (options :help)
       (print-help)
       (uiop:quit))
 
-    #-ks2-public-release
-    (format t "~&Selected solver: ~a~%"
-            (getf options :solver))
+    (debug-msg "~&Selected solver: ~a~%"
+               (getf options :solver))
 
-    #-ks2-public-release
-    (format t "~&Selected suite: ~a~%"
-            (getf options :suite))
+
+    (debug-msg "~&Selected suite: ~a~%"
+               (getf options :suite))
 
     (when-option (options :suite)
       (let ((suite-data (run-suite (getf options :suite)
