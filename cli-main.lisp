@@ -9,6 +9,15 @@
     :reader available-options
     :documentation "List of available options")))
 
+(defun print-available-solvers (stream)
+  (format stream
+          "Available solvers: ~{~a ~}"
+          '("bottom-up-enum"
+            #-ks2-public-release "duet"
+            #-ks2-public-release "frangel"
+            "top-down-enum"
+            "random")))
+
 (defun solver-parser (text)
   (setf text (string-downcase text))
   (cond
@@ -23,13 +32,6 @@
     ((string= text "random")
      :random)
     (t
-     (format *error-output*
-             "Available solvers: ~{~a ~}"
-             '("bottom-up-enum"
-               #-ks2-public-release "duet"
-               #-ks2-public-release "frangel"
-               "top-down-enum"
-               "random"))
      (error 'enum-arg-parser-failed
              :raw-arg text
              :option :solver
@@ -64,7 +66,7 @@
    :meta-var "ROOT")
   (:name :debug
    :description "Enables extra tool debug information"
-   :long "--debug"))
+   :long "debug"))
 
 (defparameter *ks2-runner-debug* nil "Enables extra debug information about ks2")
 
@@ -89,7 +91,8 @@
   (opts:describe
    :prefix "ks2 - the ks2 synthesizer suite"
    :usage-of "ks2"
-   :args "[BENCHMARK]"))
+   :args "[BENCHMARK]")
+  (print-available-solvers *standard-output*))
 
 (defun fatal-msg (format &rest opts)
   (format *error-output* "~&fatal: ")
@@ -119,7 +122,9 @@
     (format *error-output*
             "warning:  - Synthesis algorithms are under active development.~%")
     (format *error-output*
-            "warning: This tool is for evaluation and demonstration purposes only.~%"))
+            "warning: This tool is for evaluation and demonstration purposes only.~%")
+    (format *error-output* "~%~%")
+    (force-output *error-output*))
 
   (multiple-value-bind (options free-args)
       (handler-case
@@ -142,17 +147,17 @@
 
     (setf *ks2-runner-debug* (getf options :debug))
 
-    (debug-msg "Options: ~a~%" options)
+    (debug-msg "Options: ~a" options)
 
     (when-option (options :help)
       (print-help)
       (uiop:quit))
 
-    (debug-msg "~&Selected solver: ~a~%"
+    (debug-msg "Selected solver: ~a"
                (getf options :solver))
 
 
-    (debug-msg "~&Selected suite: ~a~%"
+    (debug-msg "Selected suite: ~a"
                (getf options :suite))
 
     (when-option (options :suite)
