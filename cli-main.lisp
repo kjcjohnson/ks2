@@ -11,7 +11,7 @@
 
 (defun print-available-solvers (stream)
   (format stream
-          "Available solvers: ~{~a ~}"
+          "Available solvers: ~{~a ~}~%"
           '("bottom-up-enum"
             #-ks2-public-release "duet"
             #-ks2-public-release "frangel"
@@ -123,7 +123,7 @@
             "warning:  - Synthesis algorithms are under active development.~%")
     (format *error-output*
             "warning: This tool is for evaluation and demonstration purposes only.~%")
-    (format *error-output* "~%~%")
+    (format *error-output* "~%")
     (force-output *error-output*))
 
   (multiple-value-bind (options free-args)
@@ -171,6 +171,9 @@
                                (concatenate 'string "data/" outname ".sum.csv"))))
 
     (unless (null free-args)
-      (format t "~&Benchmark: ~a~%" free-args)
+      (debug-msg "===== PROCESSING BENCHMARK =====")
+      (debug-msg "Benchmark: ~a" free-args)
 
-      (run-benchmark (first free-args) (getf options :solver)))))
+      (let ((benchmark-pathname (ks2:ensure-sexp-benchmark-file (first free-args))))
+        (debug-msg "===== STARTING BENCHMARK =====")
+        (run-benchmark benchmark-pathname (getf options :solver))))))

@@ -2,7 +2,8 @@
 ;;;; System definition for the ks2 runner
 ;;;;
 (asdf:defsystem "com.kjcjohnson.ks2.runner"
-  :depends-on ("swank-protocol"
+  :depends-on ("com.kjcjohnson.ks2"
+               "swank-protocol"
                "marshal"
                "uiop"
                "bordeaux-threads"

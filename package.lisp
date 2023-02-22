@@ -24,7 +24,8 @@
 
 (defpackage #:com.kjcjohnson.ks2.runner
   (:use #:cl)
-  (:local-nicknames (#:helper #:com.kjcjohnson.ks2.runner.helper))
+  (:local-nicknames (#:helper #:com.kjcjohnson.ks2.runner.helper)
+                    (#:ks2 #:com.kjcjohnson.ks2))
   (:export #:init-and-start-swank #:main)
   (:import-from #:swank
                 #:defslimefun))
