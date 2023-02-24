@@ -9,6 +9,7 @@
                "bordeaux-threads"
                "lparallel"
                "unix-opts"
+               "with-user-abort"
                "str")
   :build-operation "program-op"
   :build-pathname "bin/ks2"

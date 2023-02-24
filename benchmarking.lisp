@@ -209,7 +209,7 @@
     (swank-crash () :crash)
     (error (e)
       (format *trace-output*
-              "; **OTHER CONDITION: ~s~%"
+              "; **OTHER CONDITION: ~a~%"
               e)
       :other-error)))
 

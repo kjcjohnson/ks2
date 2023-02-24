@@ -76,7 +76,9 @@
                      (%maybe-process-characters
                       (uiop:process-info-error-output il-conn)
                       error-callback))
-             until (uiop:file-exists-p portfile))
+             until (uiop:file-exists-p portfile)
+             finally (terpri))
+
            (let* ((port (with-open-file (pfs portfile :direction :input)
                           (read pfs)))
                   (swank-conn (swank-protocol:make-connection

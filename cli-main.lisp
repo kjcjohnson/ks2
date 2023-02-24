@@ -109,8 +109,28 @@
     (format *error-output* "~%")
     (finish-output *error-output*)))
 
-(defun main ()
-  "Main CLI entrypoint"
+(defun parse-options ()
+  "Parses command line options. Returns options plist and free arguments"
+  (handler-case
+      (handler-bind ((opts:unknown-option #'unknown-option))
+        (opts:get-opts))
+    (opts:missing-arg (condition)
+      (fatal-msg "option ~s needs an argument"
+                 (opts:option condition)))
+    (enum-arg-parser-failed (condition)
+      (fatal-msg "cannot parse ~s as argument of ~s. Expected one of: ~{~a~^, ~}~%"
+                 (opts:raw-arg condition)
+                 (opts:option condition)
+                 (available-options condition)))
+    (opts:arg-parser-failed (condition)
+      (fatal-msg "cannot parse ~s as argument of ~s~%"
+                 (opts:raw-arg condition)
+                 (opts:option condition)))
+    (opts:missing-required-option (con)
+      (fatal-msg "~a~%" con))))
+
+(defun print-experimental-warning ()
+  "Prints a warning about the experimental status of this tool."
   #+ks2-public-release
   (progn
     (format *error-output*
@@ -124,56 +144,64 @@
     (format *error-output*
             "warning: This tool is for evaluation and demonstration purposes only.~%")
     (format *error-output* "~%")
-    (force-output *error-output*))
+    (force-output *error-output*)))
 
-  (multiple-value-bind (options free-args)
-      (handler-case
-          (handler-bind ((opts:unknown-option #'unknown-option))
-            (opts:get-opts))
-        (opts:missing-arg (condition)
-          (fatal-msg "option ~s needs an argument"
-                     (opts:option condition)))
-        (enum-arg-parser-failed (condition)
-          (fatal-msg "cannot parse ~s as argument of ~s. Expected one of: ~{~a~^, ~}~%"
-                     (opts:raw-arg condition)
-                     (opts:option condition)
-                     (available-options condition)))
-        (opts:arg-parser-failed (condition)
-          (fatal-msg "cannot parse ~s as argument of ~s~%"
-                     (opts:raw-arg condition)
-                     (opts:option condition)))
-        (opts:missing-required-option (con)
-          (fatal-msg "~a~%" con)))
+(defun main ()
+  "Main CLI entrypoint"
+  (handler-case
+      (with-user-abort:with-user-abort
+        (print-experimental-warning)
 
-    (setf *ks2-runner-debug* (getf options :debug))
+        (multiple-value-bind (options free-args)
+            (parse-options)
 
-    (debug-msg "Options: ~a" options)
+          (setf *ks2-runner-debug* (getf options :debug))
 
-    (when-option (options :help)
-      (print-help)
-      (uiop:quit))
+          (debug-msg "Options: ~a" options)
 
-    (debug-msg "Selected solver: ~a"
-               (getf options :solver))
+          (when-option (options :help)
+            (print-help)
+            (uiop:quit))
+
+          (debug-msg "Selected solver: ~a"
+                     (getf options :solver))
 
 
-    (debug-msg "Selected suite: ~a"
-               (getf options :suite))
+          (debug-msg "Selected suite: ~a"
+                     (getf options :suite))
 
-    (when-option (options :suite)
-      (let ((suite-data (run-suite (getf options :suite)
-                                   (getf options :solver)
-                                   (getf options :suite-root)))
-            (outname (substitute #\_ #\/ (getf options :suite))))
-        (write-all-results suite-data
-                           (concatenate 'string "data/" outname ".all.csv"))
-        (write-summary-results suite-data
-                               (concatenate 'string "data/" outname ".sum.csv"))))
+          (when-option (options :suite)
+            (let ((suite-data (run-suite (getf options :suite)
+                                         (getf options :solver)
+                                         (getf options :suite-root)))
+                  (outname (substitute #\_ #\/ (getf options :suite))))
+              (write-all-results suite-data
+                                 (concatenate 'string "data/" outname ".all.csv"))
+              (write-summary-results suite-data
+                                     (concatenate 'string "data/" outname ".sum.csv"))))
 
-    (unless (null free-args)
-      (debug-msg "===== PROCESSING BENCHMARK =====")
-      (debug-msg "Benchmark: ~a" free-args)
+          (unless (null free-args)
+            (debug-msg "===== PROCESSING BENCHMARK =====")
+            (let ((benchmark (first free-args)))
+              (when (> (length free-args) 1)
+                (format *error-output* "warning: only first benchmark file used~%"))
+              (debug-msg "Benchmark: ~a" benchmark)
 
-      (let ((benchmark-pathname (ks2:ensure-sexp-benchmark-file (first free-args))))
-        (debug-msg "===== STARTING BENCHMARK =====")
-        (run-benchmark benchmark-pathname (getf options :solver))))))
+              (let ((benchmark-pathname (ks2:ensure-sexp-benchmark-file benchmark)))
+                (debug-msg "===== STARTING BENCHMARK =====")
+                (let ((result
+                        (run-benchmark benchmark-pathname (getf options :solver))))
+                  (cond
+                    ((eql result :crash)
+                     (format *error-output*
+                             "error: core crashed. Likely ran out of memory~%")
+                     (opts:exit 3))
+                    ((eql result :error)
+                     (format *error-output*
+                             "error: condition signaled in solver core~%")
+                     (opts:exit 4)))))))))
+
+
+    (with-user-abort:user-abort ()
+      (terpri)
+      (opts:exit 130))))
