@@ -107,6 +107,11 @@
   (let* ((problem (maybe-load-problem-file problem-file))
          (results (apply #'solver-api:solve-problem solver-designator problem options)))
     ;; TODO: create and serialize results into a proxy object
-    (if (typep results 'sequence)
-        (map 'list #'actually-print-program-node results)
-        (actually-print-program-node results))))
+    (cond
+      ((and (listp results) (= 1 (length results)))
+       (actually-print-program-node (first results)))
+      ((typep results 'sequence)
+       (format nil "~s"
+               (map 'list #'actually-print-program-node results)))
+      (t
+       (actually-print-program-node results)))))
