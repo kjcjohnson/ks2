@@ -31,7 +31,10 @@
 runs the SemGuS Parser (if available). Returns the (maybe) new pathname."
 
   ;; We always want an actual pathname object
-  (setf pathname (uiop:ensure-pathname pathname))
+  (handler-case
+      (setf pathname (parse-namestring pathname))
+    (parse-error ()
+      (error (str:concat "Invalid benchmark filename: " pathname))))
 
   (let ((ext (pathname-type pathname)))
     (cond
