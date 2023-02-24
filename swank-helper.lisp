@@ -97,5 +97,12 @@
 (defslimefun solve-problem (solver-designator problem-file
                                               &rest options &key &allow-other-keys)
   (let ((problem (maybe-load-problem-file problem-file)))
-    (format nil "~s"
-            (apply #'solver-api:solve-problem solver-designator problem options))))
+    ;; TODO: create and serialize results into a proxy object
+    (map 'list
+         #'(lambda (p)
+             (if (typep p 'ast:program-atom)
+                 (let ((ast::*printing-program-node* t))
+                   (with-output-to-string (string-stream)
+                     (ast::print-program-node p string-stream)))
+                 (format nil "~s" p)))
+         (apply #'solver-api:solve-problem solver-designator problem options))))

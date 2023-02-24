@@ -145,11 +145,13 @@
 
                (if solved?
                    (format t
-                           "~&; RESULT: ~s~%;   TIME: ~,2fs~%;   MAX MEM OFFSET: ~,3fMiB~%;   PPS: ~,2fprog/s~%~%"
-                         result
-                         time
-                         memory
-                         exec-rate)
+                           "~&; RESULT: ~a~%;   TIME: ~,2fs~%;   MAX MEM OFFSET: ~,3fMiB~%;   PPS: ~,2fprog/s~%~%"
+                           (if (and (listp result) (= 1 (length result)))
+                               (first result)
+                               result)
+                           time
+                           memory
+                           exec-rate)
                    (format t
                            "~&; TIMEOUT after ~,2fs~%;   MAX MEM OFFSET: ~,3fMiB~%;   PPS: ~,2fprog/s~%~%"
                            time
