@@ -94,15 +94,19 @@
 (defslimefun solver-options (solver-designator)
   (solver-api:solver-options solver-designator))
 
+(defun actually-print-program-node (pn)
+  "Prints a decent representation of a program node PN."
+  (if (typep pn 'ast:program-atom)
+      (let ((ast::*printing-program-node* t))
+        (with-output-to-string (string-stream)
+          (ast::print-program-node pn string-stream)))
+      (format nil "~s" pn)))
+
 (defslimefun solve-problem (solver-designator problem-file
                                               &rest options &key &allow-other-keys)
-  (let ((problem (maybe-load-problem-file problem-file)))
+  (let* ((problem (maybe-load-problem-file problem-file))
+         (results (apply #'solver-api:solve-problem solver-designator problem options)))
     ;; TODO: create and serialize results into a proxy object
-    (map 'list
-         #'(lambda (p)
-             (if (typep p 'ast:program-atom)
-                 (let ((ast::*printing-program-node* t))
-                   (with-output-to-string (string-stream)
-                     (ast::print-program-node p string-stream)))
-                 (format nil "~s" p)))
-         (apply #'solver-api:solve-problem solver-designator problem options))))
+    (if (typep results 'sequence)
+        (map 'list #'actually-print-program-node results)
+        (actually-print-program-node results))))
