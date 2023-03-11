@@ -47,17 +47,27 @@ of SOLVER-OPTION structures."))
 
 ;; Convenience macro
 (defmacro define-solver-metadata (designator
-                                  &key name symbol action description options)
+                                  &key name symbol action description
+                                    options spec-transformer)
   `(progn
      (defmethod solver-name ((solver (eql ,designator))) ,name)
      (defmethod solver-symbol ((solver (eql ,designator))) ,symbol)
      (defmethod solver-description ((solver (eql ,designator))) ,description)
      (defmethod solver-action ((solver (eql ,designator))) ,action)
-     (defmethod solver-options ((solver (eql ,designator))) ,options)))
+     (defmethod solver-options ((solver (eql ,designator))) ,options)
+     ,@(when spec-transformer
+         (list
+          `(defmethod transform-specification ((solver (eql ,designator)) spec ctx)
+             (funcall ,spec-transformer spec ctx))))))
 
 ;;;
 ;;; Solving API
 ;;;
+(defgeneric transform-specification (solver-designator specification context)
+  (:documentation "Transforms SPECIFICATION into a format usable by a solver
+designated by SOLVER-DESIGNATOR with the problem context CONTEXT. This function may
+return NIL if the solver does not support problems with the given specification."))
+
 (defgeneric solve-problem (solver-designator semgus-problem &key &allow-other-keys)
   (:documentation "Solves SEMGUS-PROBLEM with a solver designated by SOLVER-DESIGNATOR.
 Solver options, as returned by SOLVER-OPTIONS, will be passed as keywords."))
