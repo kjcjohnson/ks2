@@ -102,10 +102,19 @@
           (ast::print-program-node pn string-stream)))
       (format nil "~s" pn)))
 
-(defslimefun solve-problem (solver-designator problem-file
-                                              &rest options &key &allow-other-keys)
+(defun transform-problem (solver-designator problem)
+  "Transforms PROBLEM into a format usable by SOLVER-DESIGNATOR."
+  (semgus:replace-specification
+   problem
+   (solver-api:transform-specification solver-designator
+                                       (semgus:specification problem)
+                                       (semgus:context problem))))
+
+(defslimefun solve-problem
+    (solver-designator problem-file &rest options &key &allow-other-keys)
   (let* ((problem (maybe-load-problem-file problem-file))
-         (results (apply #'solver-api:solve-problem solver-designator problem options)))
+         (new-p (transform-problem solver-designator problem))
+         (results (apply #'solver-api:solve-problem solver-designator new-p options)))
     ;; TODO: create and serialize results into a proxy object
     (cond
       ((and (listp results) (= 1 (length results)))
