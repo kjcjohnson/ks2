@@ -16,4 +16,5 @@
            #:make-solver-option
            #:define-solver-metadata)
   ;; Solving API
-  (:export #:solve-problem))
+  (:export #:transform-specification
+           #:solve-problem))
