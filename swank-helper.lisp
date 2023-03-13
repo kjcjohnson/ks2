@@ -110,11 +110,16 @@
                                        (semgus:specification problem)
                                        (semgus:context problem))))
 
+(defun solve-problem (solver-designator problem options)
+  "Solves a problem."
+  (smt:with-lazy-solver (smt:*cvc5*)
+    (apply #'solver-api:solve-problem solver-designator new-p options)))
+
 (defslimefun solve-problem
     (solver-designator problem-file &rest options &key &allow-other-keys)
   (let* ((problem (maybe-load-problem-file problem-file))
          (new-p (transform-problem solver-designator problem))
-         (results (apply #'solver-api:solve-problem solver-designator new-p options)))
+         (results (solve-problem solver-designator problem options)))
     ;; TODO: create and serialize results into a proxy object
     (cond
       ((and (listp results) (= 1 (length results)))
