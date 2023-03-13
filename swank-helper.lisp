@@ -8,6 +8,7 @@
 (defpackage #:com.kjcjohnson.ks2.runner.helper
   (:use :cl)
   (:local-nicknames (#:semgus #:com.kjcjohnson.synthkit.semgus)
+                    (#:smt #:com.kjcjohnson.synthkit.smt)
                     (#:ast #:com.kjcjohnson.synthkit.ast)
                     (#:solver-api #:com.kjcjohnson.ks2.solver-api))
   (:export #:init-and-start-swank)
