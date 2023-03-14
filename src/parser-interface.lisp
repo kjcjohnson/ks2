@@ -26,8 +26,8 @@
                                 "--output" (namestring output-pathname)
                                 (namestring pathname))
                           :output t
-                          :error-output t))
-      output-pathname)))
+                          :error-output t)))
+    output-pathname))
   
 (defun ensure-sexp-benchmark-file (pathname)
   "Ensures that PATHNAME designates a benchmark file in S-expression format. If not,
@@ -35,7 +35,9 @@ runs the SemGuS Parser (if available). Returns the (maybe) new pathname."
 
   ;; We always want an actual pathname object
   (handler-case
-      (setf pathname (parse-namestring pathname))
+      (setf pathname (uiop:ensure-pathname pathname
+                                           :ensure-absolute t
+                                           :defaults (uiop:getcwd)))
     (parse-error ()
       (error (str:concat "Invalid benchmark filename: " pathname))))
 

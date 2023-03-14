@@ -191,6 +191,9 @@
       (concatenate 'string string suffix)))
 
 (defun qualify-problem (problem)
+  #+ks2-public-release
+  problem
+  #-ks2-public-release
   (if (or (pathnamep problem) (uiop:file-exists-p problem))
       problem
       (merge-pathnames (ensure-ends-with problem ".sexpr")
