@@ -10,7 +10,8 @@
   (:local-nicknames (#:semgus #:com.kjcjohnson.synthkit.semgus)
                     (#:smt #:com.kjcjohnson.synthkit.smt)
                     (#:ast #:com.kjcjohnson.synthkit.ast)
-                    (#:solver-api #:com.kjcjohnson.ks2.solver-api))
+                    (#:solver-api #:com.kjcjohnson.ks2.solver-api)
+                    (#:u #:com.kjcjohnson.ks2.utilities))
   (:export #:init-and-start-swank)
   (:import-from #:swank
                 #:defslimefun))
@@ -113,8 +114,12 @@
 
 (defun do-solve-problem (solver-designator problem options)
   "Solves a problem."
-  (smt:with-lazy-solver (smt:*cvc5*)
-    (apply #'solver-api:solve-problem solver-designator problem options)))
+  (let ((solver-spec (make-instance 'smt:solver
+                                    :program (u:locate-file "cvc5"
+                                                            :optional-suffix "exe")
+                                    :arguments (smt:arguments smt:*cvc5*))))
+    (smt:with-lazy-solver (solver-spec)
+      (apply #'solver-api:solve-problem solver-designator problem options))))
 
 (defslimefun solve-problem
     (solver-designator problem-file &rest options &key &allow-other-keys)

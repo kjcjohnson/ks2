@@ -17,14 +17,17 @@
     (unless (and (uiop:file-exists-p output-pathname)
                  (> (file-write-date output-pathname)
                     (file-write-date pathname)))
-      
-      (uiop:run-program (list "semgus-parser"
-                              "--format" "sexpr"
-                              "--output" (namestring output-pathname)
-                              (namestring pathname))
-                        :output t
-                        :error-output t))
-    output-pathname))
+
+      (let ((parser-exe (u:locate-file "semgus-parser" :optional-suffix "exe")))
+        (when (null parser-exe)
+          (error "Cannot find `semgus-parser` executable. Ensure it is in the path."))
+        (uiop:run-program (list (namestring parser-exe)
+                                "--format" "sexpr"
+                                "--output" (namestring output-pathname)
+                                (namestring pathname))
+                          :output t
+                          :error-output t))
+      output-pathname)))
   
 (defun ensure-sexp-benchmark-file (pathname)
   "Ensures that PATHNAME designates a benchmark file in S-expression format. If not,

@@ -25,6 +25,7 @@
 (asdf:defsystem "com.kjcjohnson.ks2.runner/helper"
   :depends-on ("com.kjcjohnson.tdp/ks2"
                "com.kjcjohnson.ks2/solver-api"
+               "com.kjcjohnson.ks2/utilities"
                "swank"
                "trivial-garbage")
   :build-operation "image-op"
