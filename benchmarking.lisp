@@ -156,7 +156,7 @@
                            (or real-time time)
                            memory
                            exec-rate
-                           (map 'list #'symbol-name spec-types))
+                           spec-types)
                    (format t
                            "~&; TIMEOUT after ~,2fs~%;   MAX MEM OFFSET: ~,3fMiB~%;   PPS: ~,2fprog/s~%~%"
                            time

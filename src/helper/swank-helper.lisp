@@ -143,4 +143,7 @@
      :time
      (/ (- end-time start-time) internal-time-units-per-second)
      :spec-types
-     (spec:leaf-specification-types (semgus:specification new-p)))))
+     (map 'list #'symbol-name
+          (and new-p
+               (semgus:specification new-p)
+               (spec:leaf-specification-types (semgus:specification new-p)))))))
