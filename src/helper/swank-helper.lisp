@@ -8,6 +8,7 @@
 (defpackage #:com.kjcjohnson.ks2.runner.helper
   (:use :cl)
   (:local-nicknames (#:semgus #:com.kjcjohnson.synthkit.semgus)
+                    (#:spec #:com.kjcjohnson.synthkit.specification)
                     (#:smt #:com.kjcjohnson.synthkit.smt)
                     (#:ast #:com.kjcjohnson.synthkit.ast)
                     (#:solver-api #:com.kjcjohnson.ks2.solver-api)
@@ -125,13 +126,21 @@
     (solver-designator problem-file &rest options &key &allow-other-keys)
   (let* ((problem (maybe-load-problem-file problem-file))
          (new-p (transform-problem solver-designator problem))
-         (results (do-solve-problem solver-designator new-p options)))
+         (start-time (get-internal-real-time))
+         (results (do-solve-problem solver-designator new-p options))
+         (end-time (get-internal-real-time)))
     ;; TODO: create and serialize results into a proxy object
-    (cond
-      ((and (listp results) (= 1 (length results)))
-       (actually-print-program-node (first results)))
-      ((typep results 'sequence)
-       (format nil "~s"
-               (map 'list #'actually-print-program-node results)))
-      (t
-       (actually-print-program-node results)))))
+    (list
+     :program
+     (cond
+       ((and (listp results) (= 1 (length results)))
+        (actually-print-program-node (first results)))
+       ((typep results 'sequence)
+        (format nil "~s"
+                (map 'list #'actually-print-program-node results)))
+       (t
+        (actually-print-program-node results)))
+     :time
+     (/ (- end-time start-time) internal-time-units-per-second)
+     :spec-types
+     (spec:leaf-specification-types (semgus:specification new-p)))))

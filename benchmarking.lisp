@@ -44,7 +44,8 @@
                       (format nil "~,2fs" (second list)))))
         (:memory (format nil "~,3fMiB" (third list)))
         (:result (fourth list))
-        (:exec-rate (format nil "~,0fp/s" (fifth list))))
+        (:exec-rate (format nil "~,0fp/s" (fifth list)))
+        (:spec-types (format nil "~{~a~^; ~}" (sixth list))))
       (if decorative
           (case list
             (:error *symbol-error*)
@@ -79,6 +80,7 @@
     (format fs "Time~%~a~%~%" (results-to-csv-string results :time))
     (format fs "Peak Memory~%~a~%~%" (results-to-csv-string results :memory))
     (format fs "Execution Rate~%~a~%~%" (results-to-csv-string results :exec-rate))
+    (format fs "Spec. Types~%~a~%~%" (results-to-csv-string results :spec-types))
     (format fs "Result~%~a~%~%" (results-to-csv-string results :result))
     (finish-output fs)))
 
@@ -140,24 +142,27 @@
                                 (ok-or-fail (lparallel:force result-promise))
                                 nil))
                     (exec-count (get-execution-counter child-lisp))
-                    (exec-rate (/ exec-count time)))
-
+                    (exec-rate (/ exec-count time))
+                    (program (getf result :program))
+                    (real-time (getf result :time))
+                    (spec-types (getf result :spec-types)))
 
                (if solved?
                    (format t
-                           "~&; RESULT: ~a~%;   TIME: ~,2fs~%;   MAX MEM OFFSET: ~,3fMiB~%;   PPS: ~,2fprog/s~%~%"
-                           (if (and (listp result) (= 1 (length result)))
-                               (first result)
-                               result)
-                           time
+                           "~&; RESULT: ~a~%;   TIME: ~,2fs~%;   MAX MEM OFFSET: ~,3fMiB~%;   PPS: ~,2fprog/s~%;   SPEC: ~{~a~^, ~}~%~%"
+                           (if (and (listp program) (= 1 (length program)))
+                               (first program)
+                               program)
+                           (or real-time time)
                            memory
-                           exec-rate)
+                           exec-rate
+                           (map 'list #'symbol-name spec-types))
                    (format t
                            "~&; TIMEOUT after ~,2fs~%;   MAX MEM OFFSET: ~,3fMiB~%;   PPS: ~,2fprog/s~%~%"
                            time
                            memory
                            exec-rate))
-               (list solved? time memory result exec-rate))))
+               (list solved? (or real-time time) memory program exec-rate spec-types))))
     (unless (null child-lisp)
       (terminate-child child-lisp :urgent t)))))
 

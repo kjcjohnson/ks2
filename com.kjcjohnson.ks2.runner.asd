@@ -31,4 +31,5 @@
   :build-operation "image-op"
   :build-pathname "bin/ks2-runner"
   :serial t
+  :pathname "src/helper"
   :components ((:file "swank-helper")))
