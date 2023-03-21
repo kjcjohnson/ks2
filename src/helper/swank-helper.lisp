@@ -122,28 +122,40 @@
     (smt:with-lazy-solver (solver-spec)
       (apply #'solver-api:solve-problem solver-designator problem options))))
 
+(defun %get-spec-types (problem)
+  "Gets the specification types used in PROBLEM"
+  (map 'list #'symbol-name
+       (and problem
+            (semgus:specification problem)
+            (spec:leaf-specification-types (semgus:specification problem)))))
+
+(defun create-result (results delta-internal-time problem)
+  "Creates a results object to pass back"
+  ;; TODO: create and serialize results into a proxy object
+  (list
+   :program
+   (cond
+     ((and (listp results) (= 1 (length results)))
+      (actually-print-program-node (first results)))
+     ((typep results 'sequence)
+      (format nil "~s"
+              (map 'list #'actually-print-program-node results)))
+     (t
+      (actually-print-program-node results)))
+   :time
+   (/ delta-internal-time internal-time-units-per-second)
+   :spec-types
+   (%get-spec-types problem)))
+
+
 (defslimefun solve-problem
     (solver-designator problem-file &rest options &key &allow-other-keys)
   (let* ((problem (maybe-load-problem-file problem-file))
-         (new-p (transform-problem solver-designator problem))
-         (start-time (get-internal-real-time))
-         (results (do-solve-problem solver-designator new-p options))
-         (end-time (get-internal-real-time)))
-    ;; TODO: create and serialize results into a proxy object
-    (list
-     :program
-     (cond
-       ((and (listp results) (= 1 (length results)))
-        (actually-print-program-node (first results)))
-       ((typep results 'sequence)
-        (format nil "~s"
-                (map 'list #'actually-print-program-node results)))
-       (t
-        (actually-print-program-node results)))
-     :time
-     (/ (- end-time start-time) internal-time-units-per-second)
-     :spec-types
-     (map 'list #'symbol-name
-          (and new-p
-               (semgus:specification new-p)
-               (spec:leaf-specification-types (semgus:specification new-p)))))))
+         (new-p (transform-problem solver-designator problem)))
+
+    (if (null (semgus:specification new-p))
+        (list :program :unsupported :spec-types (%get-spec-types problem))
+        (let* ((start-time (get-internal-real-time))
+               (results (do-solve-problem solver-designator new-p options))
+               (end-time (get-internal-real-time)))
+          (create-result results (- end-time start-time) new-p)))))

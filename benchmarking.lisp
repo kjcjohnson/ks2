@@ -31,17 +31,21 @@
 (defparameter *symbol-memory* "📈")
 (defparameter *symbol-unknown* "❓")
 (defparameter *symbol-no-solution* "🚫")
+(defparameter *symbol-unsupported* "⛔")
 
 (defun get-metric (list what &key decorative)
   (if (consp list)
       (ecase what
-        (:solved? (first list))
-        (:time (cond ((and (null (first list)) decorative)
-                      *symbol-timeout*)
-                     ((and (first list) (string= (fourth list) "NIL") decorative)
-                      *symbol-no-solution*)
-                     (t
-                      (format nil "~,2fs" (second list)))))
+        (:solved? (and (first list) (not (eql (fourth list) :unsupported))))
+        (:time (cond
+                 ((and (null (first list)) decorative)
+                  *symbol-timeout*)
+                 ((and (first list) (eql (fourth list) :unsupported) decorative)
+                  *symbol-unsupported*)
+                 ((and (first list) (string= (fourth list) "NIL") decorative)
+                  *symbol-no-solution*)
+                 (t
+                  (format nil "~,2fs" (second list)))))
         (:memory (format nil "~,3fMiB" (third list)))
         (:result (fourth list))
         (:exec-rate (format nil "~,0fp/s" (fifth list)))
