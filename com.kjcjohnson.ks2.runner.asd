@@ -34,4 +34,4 @@
   :components ((:module "helper"
                 :pathname "src/helper"
                 :serial t
-                :components (:file "swank-helper"))))
+                :components ((:file "swank-helper")))))
