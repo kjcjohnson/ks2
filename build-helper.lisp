@@ -8,7 +8,7 @@
   (when disable-smt (push :synthkit-disable-smt-solver *features*))
   (ql:quickload "com.kjcjohnson.tdp/test")
   (proclaim `(optimize 
-              ,(case optimize
+              ,@(case optimize
                  (:speed '((speed 3) (debug 0)))
                  (:debug '((speed 1) (debug 3)))
                  (otherwise '((speed 1) (debug 2))))))
