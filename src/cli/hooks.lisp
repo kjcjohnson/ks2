@@ -16,3 +16,4 @@
 
 (uiop:register-image-dump-hook #'stop-logger nil)
 (uiop:register-image-restore-hook #'start-logger nil)
+(exit-hooks:add-exit-hook #'stop-logger)

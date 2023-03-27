@@ -45,6 +45,7 @@
                "clingon"
                "str"
                "shasht"
+               "exit-hooks"
                "com.kjcjohnson.ks2")
   :build-operation "program-op"
   :build-pathname "bin/ks2"
