@@ -30,7 +30,7 @@
 
 (defun find-inferior-image ()
   "Looks for an inferior image."
-  (let* ((imgname "ks2-runner.image")
+  (let* ((imgname "ks2-core.image")
          (cwd (merge-pathnames imgname (uiop:getcwd)))
          #+sbcl
          (coreloc (merge-pathnames imgname sb-ext:*core-pathname*)))

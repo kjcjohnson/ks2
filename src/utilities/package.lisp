@@ -6,4 +6,5 @@
   (:local-nicknames (#:a #:alexandria))
   (:export #:path-variable
            #:core-location
-           #:locate-file))
+           #:locate-file
+           #:rationalize-namestring))

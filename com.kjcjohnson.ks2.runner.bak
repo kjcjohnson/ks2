@@ -2,7 +2,7 @@
 ;;;; System definition for the ks2 runner
 ;;;;
 (asdf:defsystem "com.kjcjohnson.ks2.runner"
-  :depends-on ("com.kjcjohnson.ks2/parser"
+  :depends-on ("com.kjcjohnson.ks2"
                "swank-protocol"
                "marshal"
                "uiop"
@@ -10,16 +10,21 @@
                "lparallel"
                "unix-opts"
                "with-user-abort"
+               "clingon"
                "str")
   :build-operation "program-op"
   :build-pathname "bin/ks2"
-  :entry-point "COM.KJCJOHNSON.KS2.RUNNER:MAIN"
+  :entry-point "COM.KJCJOHNSON.KS2.RUNNER:MAIN2"
   :serial t
   :components ((:file "package")
                (:file "child-lisp")
                (:file "runner")
                (:file "client-api")
                (:file "benchmarking")
+               (:module "runner*"
+                :pathname "src/runner"
+                :serial t
+                :components ((:file "main")))
                (:file "cli-main")))
 
 (asdf:defsystem "com.kjcjohnson.ks2.runner/helper"
@@ -29,9 +34,7 @@
                "swank"
                "trivial-garbage")
   :build-operation "image-op"
-  :build-pathname "bin/ks2-core"
+  :pathname "src/helper"
+  :build-pathname "../../bin/ks2-runner"
   :serial t
-  :components ((:module "helper"
-                :pathname "src/helper"
-                :serial t
-                :components ((:file "swank-helper")))))
+  :components ((:file "swank-helper")))
