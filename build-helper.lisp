@@ -21,4 +21,5 @@
   "Builds the controller app"
   (when public-release (push :ks2-public-release *features*))
   (ql:quickload "com.kjcjohnson.ks2.runner")
+  (ql:quickload "com.kjcjohnson.ks2/app")
   (asdf:oos 'asdf:program-op "com.kjcjohnson.ks2/app"))
