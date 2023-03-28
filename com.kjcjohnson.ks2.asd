@@ -45,7 +45,9 @@
                "clingon"
                "str"
                "shasht"
+               "com.inuoe.jzon"
                "exit-hooks"
+               "com.kjcjohnson.ks2.runner"
                "com.kjcjohnson.ks2")
   :build-operation "program-op"
   :build-pathname "bin/ks2"
@@ -56,5 +58,6 @@
                 :components ((:file "package")
                              (:file "solve")
                              (:file "benchmark")
+                             (:file "report")
                              (:file "main")
                              (:file "hooks")))))

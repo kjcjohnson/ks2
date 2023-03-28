@@ -116,7 +116,36 @@
    :usage "[options] [suite-path]"
    :options (benchmark/options)
    :handler #'benchmark/handler))
-  
+
+;;;
+;;; Report generation
+;;;
+(defun report/options ()
+  "Options for report generation"
+  (list
+   (clingon:make-option
+    :filepath
+    :description "HTML output file to write report into"
+    :short-name #\o
+    :long-name "output"
+    :key :output-path
+    :env-vars '("KS2_OUTPUT_FILE"))))
+
+(defun report/handler (cmd)
+  "Handler for the report generation command"
+  (let ((output-file (clingon:getopt cmd :output-path))
+        (json-files (clingon:command-arguments cmd)))
+    (invoke-report json-files output-file)))
+
+(defun report/command ()
+  "Command for generating a report from benchmark data files"
+  (clingon:make-command
+   :name "report"
+   :description "generate reports from benchmark data files"
+   :usage "[options] [json-files]"
+   :options (report/options)
+   :handler #'report/handler))
+
 ;;;
 ;;; Root command
 ;;;

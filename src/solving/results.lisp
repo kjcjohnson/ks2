@@ -156,10 +156,10 @@ sequences of string designators."
                    :suite suite
                    :solvers (map '(vector string) #'string solvers)
                    :problems (map '(vector string) #'name (problems suite))
-                   :result-matrix (make-array (list solver-dim problem-dim)
+                   :result-matrix (make-array (list problem-dim solver-dim)
                                               :element-type '(or problem-result null)
                                               :initial-element nil)
-                   :summary-matrix (make-array (list solver-dim problem-dim)
+                   :summary-matrix (make-array (list problem-dim solver-dim)
                                                :element-type 'string
                                                :initial-element ""))))
 
@@ -181,8 +181,8 @@ sequences of string designators."
   (declare (type suite-results results)
            (type %matrix-index solver problem))
   (aref (result-matrix results)
-        (%compute-matrix-index solver (solvers results))
-        (%compute-matrix-index problem (problems results))))
+        (%compute-matrix-index problem (problems results))
+        (%compute-matrix-index solver (solvers results))))
 
 (defun (setf suite-result) (result results solver problem)
   "Sets the results for SOLVER and PROBLEM"
@@ -191,7 +191,7 @@ sequences of string designators."
            (type %matrix-index solver problem))
   (let ((solver-ix (%compute-matrix-index solver (solvers results)))
         (problem-ix (%compute-matrix-index problem (problems results))))
-    (setf (aref (result-matrix results) solver-ix problem-ix)
+    (setf (aref (result-matrix results) problem-ix solver-ix)
           result)
-    (setf (aref (summary-matrix results) solver-ix problem-ix)
+    (setf (aref (summary-matrix results) problem-ix solver-ix)
           (problem-result-summary result))))
