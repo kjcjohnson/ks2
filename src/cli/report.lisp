@@ -33,27 +33,37 @@
 
 (defun write-report (ss data)
   "Writes a report from DATA into stream SS."
-  (format ss "<html>
+  (format ss "<!DOCTYPE html>
+<html>
   <body>
     <h1>Benchmark Results</h1>
 ")
+
+  (when (null data)
+    (format ss "    <p>No benchmark suites found.</p>~%"))
   
   (loop for table in data
         do
-           (format ss "<h2>~a</h2>~%" (%ih table "suite" "name"))
-           (format ss "<table>~%")
+           (format ss "    <h2>~a</h2>~%" (%ih table "suite" "name"))
+           (format ss "    <div>~%")
+           (format ss "      <table>~%")
            ;; header
            (format ss
-                   "  <thead><tr><th>Benchmark</th>~{<th>~a</th>~}</tr></thead>~%"
+                   "        <thead><tr><th>Benchmark</th>~{<th>~a</th>~}</tr></thead>~%"
                    (coerce (%ih table "solvers") 'list))
            (loop
              with sum-mat = (%ih table "summary-matrix")
              for problem across (%ih table "problems")
              for sub-mat across sum-mat
              do
-                (format ss "<tr><td>~a</td>~{<td>~a</td>~}</tr>~%"
+                (format ss "        <tr><td>~a</td>~{<td>~a</td>~}</tr>~%"
                         problem
                         (loop for res across sub-mat collecting res)))
            
-           (format ss "</table>~%"))
-  (format ss "</body></html>~%"))
+           (format ss "      </table>~%")
+           (format ss "    </div>~%"))
+  (format ss "    <footer><p><em>Generated: ~a</em></p></footer>~%"
+          (local-time:format-timestring nil (local-time:now)
+                                        :format local-time:+rfc-1123-format+))
+  (format ss "  </body>
+</html>~%"))

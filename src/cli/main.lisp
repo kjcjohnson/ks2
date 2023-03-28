@@ -168,7 +168,8 @@
   "Subcommands for ks2"
   (list
    (solve/command)
-   (benchmark/command)))
+   (benchmark/command)
+   (report/command)))
 
 (defun ks2/command ()
   "The main ks2 command"

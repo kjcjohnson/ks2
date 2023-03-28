@@ -47,6 +47,7 @@
                "shasht"
                "com.inuoe.jzon"
                "exit-hooks"
+               "local-time"
                "com.kjcjohnson.ks2.runner"
                "com.kjcjohnson.ks2")
   :build-operation "program-op"
