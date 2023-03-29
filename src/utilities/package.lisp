@@ -7,4 +7,5 @@
   (:export #:path-variable
            #:core-location
            #:locate-file
+           #:locate-exe
            #:rationalize-namestring))

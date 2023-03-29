@@ -28,6 +28,12 @@
   #-sbcl
   nil)
 
+(defun locate-exe (filename)
+  "Locates an executable named FILENAME. The .exe suffix may be added on Windows."
+  (if (uiop:os-windows-p)
+      (locate-file filename :optional-suffix "exe")
+      (locate-file filename)))
+
 (defun locate-file (filename &key optional-suffix hint-path
                                (use-path t) (use-coreloc t) (use-cwd nil))
   "Locates FILENAME, maybe with OPTIONAL-SUFFIX, in the path, next to the core, or at

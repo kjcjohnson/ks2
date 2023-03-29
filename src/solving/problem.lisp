@@ -14,11 +14,11 @@
          :documentation "The pathname of this problem"))
   (:documentation "A problem and metadata"))
 
-(defun make-problem (path)
+(defun make-problem (path &key transformer)
   "Makes a problem object from PATH"
   (declare (type pathname path))
   (make-instance 'problem
-                 :path path
+                 :path (if transformer (funcall transformer path) path)
                  :name (pathname-name path)))
 
 (defmethod print-object ((obj problem) stream)

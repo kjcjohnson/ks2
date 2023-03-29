@@ -36,7 +36,7 @@
         ((< score1 score2) file1)
         (t file2)))))
 
-(defun make-suite-from-directory (pathname)
+(defun make-suite-from-directory (pathname &key transformer)
   "Makes a suite from a directory of benchmark files"
   (let ((benchmark-dir (uiop:ensure-directory-pathname pathname)))
     (unless (uiop:directory-exists-p benchmark-dir)
@@ -59,7 +59,7 @@
                             unless (null file) do
                               (v:debug :ks2.solving.suite "Using benchmark: ~a" file)
                             and
-                              collect (make-problem file))))
+                              collect (make-problem file :transformer transformer))))
         (make-instance 'suite
                        ;; Yikes. We need a more rigorous way of getting the suite name
                        :name (string (car (last (pathname-directory benchmark-dir))))

@@ -18,7 +18,7 @@
                  (> (file-write-date output-pathname)
                     (file-write-date pathname)))
 
-      (let ((parser-exe (u:locate-file "semgus-parser" :optional-suffix "exe")))
+      (let ((parser-exe (u:locate-exe "semgus-parser")))
         (when (null parser-exe)
           (error "Cannot find `semgus-parser` executable. Ensure it is in the path."))
         (uiop:run-program (list (namestring parser-exe)

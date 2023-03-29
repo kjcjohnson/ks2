@@ -14,7 +14,9 @@ directory pathname (to write to file), t to write to stdout, or nil for a string
     (unless (uiop:directory-exists-p suite-pathname)
       (error "suite directory ~a does not exist" suite-pathname))
     
-    (let* ((suite (sv:make-suite-from-directory suite-pathname))
+    (let* ((suite (sv:make-suite-from-directory
+                   suite-pathname
+                   :transformer #'ks2:ensure-sexp-benchmark-file))
            (results (sv:run-suite suite solvers)))
       (write-result output-format results output-pathname))))
 
