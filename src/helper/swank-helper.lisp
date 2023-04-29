@@ -39,6 +39,12 @@
 (defslimefun get-execution-counter ()
   ast:*execution-counter*)
 
+(defslimefun get-concrete-candidate-counter ()
+  ast:*candidate-concrete-programs*)
+
+(defslimefun get-partial-candidate-counter ()
+  ast:*candidate-partial-programs*)
+
 (defslimefun force-gc ()
   (trivial-garbage:gc :full t))
 
@@ -61,6 +67,8 @@
     (asdf:oos 'asdf:load-op "com.kjcjohnson.tdp/test" :force t)
     (push :ks2-bootstrapped *features*))
   (setf ast:*execution-counter* 0)
+  (setf ast:*candidate-concrete-programs* 0)
+  (setf ast:*candidate-partial-programs* 0)
   (trivial-garbage:gc :full t)
   t)
 
@@ -115,7 +123,7 @@
 
 (defun do-solve-problem (solver-designator problem options)
   "Solves a problem."
-  (let ((solver-spec (make-instance 'smt:solver
+  (let ((solver-spec (make-instance 'smt:solver*
                                     :program (u:locate-file "cvc5"
                                                             :optional-suffix "exe")
                                     :arguments (smt:arguments smt:*cvc5*))))

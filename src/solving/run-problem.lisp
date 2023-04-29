@@ -34,8 +34,10 @@
                     (result (if solved?
                                 (runner::ok-or-fail (lparallel:force result-promise))
                                 nil))
-                    (exec-count (runner::get-execution-counter child-lisp))
+                    (exec-count (runner:get-execution-counter child-lisp))
                     (exec-rate (/ exec-count time))
+                    (concrete-count (runner:get-concrete-candidate-counter child-lisp))
+                    (partial-count (runner:get-partial-candidate-counter child-lisp))
                     (program (getf result :program))
                     (real-time (getf result :time))
                     (spec-types (getf result :spec-types)))
@@ -49,7 +51,9 @@
                                         (first program)
                                         program)
                                     exec-rate
-                                    spec-types))))
+                                    spec-types
+                                    concrete-count
+                                    partial-count))))
       (unless (null child-lisp)
         (runner::terminate-child child-lisp :urgent t)))))
 

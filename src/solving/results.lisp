@@ -41,11 +41,21 @@
    (specification-types :reader specification-types
                         :initarg :specification-types
                         :type list
-                        :documentation "List of specification type names (strings)"))
+                        :documentation "List of specification type names (strings)")
+   (concrete-candidate-counter :reader concrete-candidate-counter
+                               :initarg :concrete-candidate-counter
+                               :type number
+                               :documentation "Count of concrete candidates considered")
+   (partial-candidate-counter :reader partial-candidate-counter
+                              :initarg :partial-candidate-counter
+                              :type number
+                              :documentation "Count of partial candidates considered"))
   (:documentation "Results from running a problem."))
 
 (defun make-problem-result
-    (name solver solved? run-time peak-memory program verify-rate specification-types)
+    (name solver solved?
+     run-time peak-memory program verify-rate specification-types
+     concrete-candidate-counter partial-candidate-counter)
   "Makes problem results"
   (make-instance 'problem-result
                  :name (string name)
@@ -59,7 +69,9 @@
                            ((eql program :unsupported) :unsupported)
                            ((and solved? (string= program "NIL")) :unrealizable)
                            ((and (not solved?)) :timeout)
-                           (solved? :solved))))
+                           (solved? :solved))
+                 :concrete-candidate-counter concrete-candidate-counter
+                 :partial-candidate-counter partial-candidate-counter))
 
 (defun make-problem-result-for-crash (name solver)
   "Makes a problem result for a crashed solver run"

@@ -5,6 +5,8 @@
   (:export #:get-used-dynamic-space
            #:get-total-dynamic-space
            #:get-execution-counter
+           #:get-concrete-candidate-counter
+           #:get-partial-candidate-counter
            #:get-statistics
            #:force-gc
            #:get-gc-run-time
@@ -27,5 +29,8 @@
   (:local-nicknames (#:helper #:com.kjcjohnson.ks2.runner.helper)
                     (#:ks2 #:com.kjcjohnson.ks2))
   (:export #:init-and-start-swank #:main #:main2)
+  (:export #:get-execution-counter
+           #:get-concrete-candidate-counter
+           #:get-partial-candidate-counter)
   (:import-from #:swank
                 #:defslimefun))

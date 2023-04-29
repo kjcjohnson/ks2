@@ -27,6 +27,14 @@
   "Gets the execution counter in a child lisp environment."
   (ok-or-fail (rpc-call/sync child-lisp '(helper:get-execution-counter))))
 
+(defun get-concrete-candidate-counter (child-lisp)
+  "Gets the candidate concrete program counter in a child lisp environment."
+  (ok-or-fail (rpc-call/sync child-lisp '(helper:get-concrete-candidate-counter))))
+
+(defun get-partial-candidate-counter (child-lisp)
+  "Gets the candidate partial program counter in a child lisp environment."
+  (ok-or-fail (rpc-call/sync child-lisp '(helper:get-partial-candidate-counter))))
+
 (defun get-statistics (child-lisp)
   "Gets statistics from a child lisp environment"
   (ok-or-fail (rpc-call/sync child-lisp '(helper:get-statistics))))
