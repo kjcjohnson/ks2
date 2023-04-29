@@ -124,6 +124,30 @@
   "Options for report generation"
   (list
    (clingon:make-option
+    :enum
+    :description "reporter to use"
+    :short-name #\r
+    :long-name "reporter"
+    :key :reporter
+    :env-vars '("KS2_REPORTER")
+    :initial-value "html"
+    :items '(("html" . html-reporter)
+             ("text" . text-reporter)))
+   (clingon:make-option
+    :list
+    :description "solvers to report on (multiple allowed)"
+    :short-name #\s
+    :long-name "solver"
+    :key :solvers
+    :env-vars '("KS2_SOLVER"))
+   (clingon:make-option
+    :list
+    :description "field to display (multiple allowed)"
+    :short-name #\f
+    :long-name "field"
+    :key :fields
+    :env-vars '("KS2_FIELD"))
+   (clingon:make-option
     :filepath
     :description "HTML output file to write report into"
     :short-name #\o
@@ -134,8 +158,11 @@
 (defun report/handler (cmd)
   "Handler for the report generation command"
   (let ((output-file (clingon:getopt cmd :output-path))
+        (reporter (clingon:getopt cmd :reporter))
+        (fields (clingon:getopt cmd :fields))
+        (solvers (clingon:getopt cmd :solvers))
         (json-files (clingon:command-arguments cmd)))
-    (invoke-report json-files output-file)))
+    (invoke-report reporter json-files output-file (or fields '("summary")) solvers)))
 
 (defun report/command ()
   "Command for generating a report from benchmark data files"

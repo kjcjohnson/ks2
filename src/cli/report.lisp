@@ -3,6 +3,179 @@
 ;;;;
 (in-package #:com.kjcjohnson.ks2.cli)
 
+;;;
+;;; Report data structures
+;;;
+;;;  Reports are divided into Tables, Rows, Entries, and Fields
+;;;   - A table holds results for an entire suite
+;;;   - A row holds results for a particular benchmark
+;;;   - An entry holds a benchmark's fields for a particular solver
+;;;   - A field holds a specific data point for a particular solver
+(defclass report-field-descriptor ()
+  ((id :reader id
+       :initarg :id
+       :type symbol
+       :documentation "Identifer for what data this field is associated with")
+   (name :reader name
+         :initarg :name
+         :type string
+         :documentation "Name of this field")
+   (location :reader location
+             :initarg :location
+             :type string
+             :documentation "Where in the result matrix this field is found.")
+   (format :reader field-format
+           :initarg :field-format
+           :type string
+           :documentation "How to format this field"))
+  (:documentation "A specific point of data in a report"))
+
+(defmethod print-object ((obj report-field-descriptor) stream)
+  (print-unreadable-object (obj stream)
+    (format stream "RFD: ~a" (id obj))))
+
+(defun make-report-field-descriptor (id &key name location format)
+  "Makes a field descriptor"
+  (make-instance 'report-field-descriptor :id id
+                                          :name name
+                                          :location location
+                                          :field-format format))
+
+(defclass report-entry ()
+  ((solver :accessor solver
+           :initarg :solver
+           :type string
+           :documentation "Solver this entry is for")
+   (field-descriptors :accessor field-descriptors
+                      :initarg :field-descriptors
+                      :type (vector report-field-descriptor)
+                      :documentation "Fields in this entry")
+   (field-values :accessor field-values
+                 :initarg :field-values
+                 :type (vector string)
+                 :documentation "Values of fields in this entry"))
+  (:documentation "A collection of fields used in a report row"))
+
+(defmethod print-object ((obj report-entry) stream)
+  (print-unreadable-object (obj stream)
+    (format stream "RE: ")
+    (loop for desc across (field-descriptors obj)
+          for val  across (field-values obj)
+          do (format stream "~a:~a" (id desc) val))))
+
+(defclass report-row ()
+  ((benchmark :accessor benchmark
+              :initarg :benchmark
+              :type string
+              :documentation "Benchmark name for this row")
+   (entries :accessor entries
+            :initarg :entries
+            :type (vector report-entry)
+            :documentation "Entries in this report row"))
+  (:documentation "A row of report entries"))
+
+(defclass report-table ()
+  ((title :accessor title
+          :initarg :title
+          :type string
+          :documentation "The table's title")
+   (solvers :accessor solvers
+            :initarg :solvers
+            :type vector ; TODO: more specific
+            :documentation "Vector of solvers in this table")
+   (field-descriptors :accessor field-descriptors
+                      :initarg :fields
+                      :type (vector field-descriptor)
+                      :documentation "Vector of field descriptors in each entry")
+   (rows :accessor rows
+         :initarg :rows
+         :type (vector table-row)
+         :documentation "Vector of table rows"))
+  (:documentation "A report table"))
+
+(defun get-report-field-descriptor (id)
+  "Converts a field string to a field descriptor"
+  (declare (type string id))
+  (flet ((mrfd (id &optional format name)
+           (let* ((location (str:downcase (symbol-name id)))
+                  (format (or format "~a"))
+                  (name (or name (str:title-case (str:replace-all "-" " " location)))))
+             (make-report-field-descriptor id :name name
+                                              :location location
+                                              :format format))))
+    (str:string-case (str:downcase (str:replace-all " " "-" id))
+      ("status" (mrfd :status))
+      ("name" (mrfd :name))
+      ("solver" (mrfd :solver))
+      ("run-time" (mrfd :run-time "~5f"))
+      ("time" (mrfd :run-time "~5f"))
+      ("peak-memory" (mrfd :peak-memory))
+      ("memory" (mrfd :peak-memory))
+      ("program" (mrfd :program))
+      ("verify-rate" (mrfd :verify-rate))
+      ("concrete-candidate-counter" (mrfd :concrete-candidate-counter))
+      ("concrete-counter" (mrfd :concrete-candidate-counter))
+      ("concrete" (mrfd :concrete-candidate-counter))
+      ("partial-candidate-counter" (mrfd :partial-candidate-counter))
+      ("partial-counter" (mrfd :partial-candidate-counter))
+      ("partial" (mrfd :partial-candidate-counter))
+      ("rate" (mrfd :verify-rate))
+      ("specification-types" (mrfd :specification-types))
+      ("summary" (mrfd :summary))
+      (otherwise (error "Unknown field: ~a" id)))))
+
+(defun get-report-field (field result-entry summary-entry)
+  "Gets a report field from entries"
+  (format nil
+          (field-format field)
+          (if (string= "summary" (location field))
+              summary-entry
+              (%ih result-entry (location field)))))
+
+(defun parse-report-into-table (data &optional (fields '("summary")) solvers)
+  "Parses suite data in DATA (as a hash table) into a report object, with the specified
+list of FIELDS. If FIELDS is NIL, only includes the summary field"
+  (declare (ignore solvers))
+  (let ((name (%ih data "suite" "name"))
+        (fields (map 'vector #'get-report-field-descriptor fields))
+        (solvers (%ih data "solvers"))
+        (table (make-array (length (%ih data "problems")))))
+    (loop for d-row across (%ih data "result-matrix")
+          for s-row across (%ih data "summary-matrix")
+          for benchmark across (%ih data "problems")
+          for row = (make-array (length (%ih data "solvers")))
+          for row-ix from 0
+          doing
+             (loop for solver across solvers
+                   for d-entry across d-row
+                   for s-entry across s-row
+                   for entry = (make-array (length fields))
+                   for entry-ix from 0
+                   doing
+                      (loop for field across fields
+                            for ix from 0
+                            doing
+                               (setf (aref entry ix)
+                                     (get-report-field field d-entry s-entry)))
+                   do (setf (aref row entry-ix)
+                            (make-instance 'report-entry
+                                           :field-descriptors fields
+                                           :field-values entry
+                                           :solver solver)))
+          do (setf (aref table row-ix)
+                   (make-instance 'report-row
+                                  :entries row
+                                  :benchmark benchmark)))
+
+    (make-instance 'report-table
+                   :title name
+                   :solvers solvers
+                   :fields fields
+                   :rows table)))
+
+;;;
+;;; Implementations
+;;;
 (defun %ih (table &rest keys)
   "Does a weird case-insensitive hashtable get"
   (flet ((iter-1 (key table)
@@ -17,53 +190,256 @@
           unless (null curr-table) do
              (setf curr-table (iter-1 key curr-table))
           finally (return curr-table))))
-          
-    
-(defun invoke-report (json-files output-file)
+
+
+(defun invoke-report (reporter json-files output-file fields solvers)
   "Processes result files into a combined report"
   (map-into json-files #'u:rationalize-namestring json-files)
-
   (let ((data (loop for file in json-files
-                    collect (jzon:parse file))))
+                    collect (parse-report-into-table (jzon:parse file)
+                                                     fields
+                                                     solvers)))
+        (reporter (make-instance reporter)))
     (if (null output-file)
-        (write-report *standard-output* data)
+        (write-report reporter *standard-output* data)
         (uiop:with-output-file (ss (u:rationalize-namestring output-file)
                                    :if-exists :supersede)
-          (write-report ss data)))))
+          (write-report reporter ss data)))))
 
-(defun write-report (ss data)
+(defgeneric write-report-header (reporter stream)
+  (:documentation "Writes a report header with REPORTER to STREAM."))
+
+(defgeneric write-report-footer (reporter stream)
+  (:documentation "Writes a report footer with REPORTER to STREAM."))
+
+(defgeneric write-report-table (reporter stream table)
+  (:documentation "Writes a report on TABLE with REPORTER to STREAM."))
+
+(defgeneric write-report-table-header (reporter stream table)
+  (:documentation "Writes a report table header on TABLE with REPORTER to STREAM."))
+
+(defgeneric write-report-table-body (reporter stream table)
+  (:documentation "Writes a report table body on TABLE with REPORTER to STREAM."))
+
+(defgeneric write-report-table-row (reporter stream row table)
+  (:documentation "Writes a report ROW on TABLE with REPORTER to STREAM."))
+
+(defgeneric write-report-table-entry (reporter stream entry row table)
+  (:documentation "Writes a report ENTRY for ROW on TABLE with REPORTER to STREAM."))
+
+(defgeneric write-report-table-field (reporter stream descriptor value entry row table)
+  (:documentation "Writes a report VALUE with field DESCRIPTOR for ENTRY for ROW
+on TABLE with REPORTER to STREAM."))
+
+(defgeneric write-report-empty (reporter stream)
+  (:documentation "Writes a message that there are no tables with REPORTER to STREAM."))
+
+(defgeneric write-report (reporter stream tables)
+  (:documentation "Writes a report on TABLES with REPORTER to STREAM."))
+
+;;;
+;;; Default methods
+;;;
+(defmethod write-report (reporter ss data)
   "Writes a report from DATA into stream SS."
-  (format ss "<!DOCTYPE html>
-<html>
-  <body>
-    <h1>Benchmark Results</h1>
-")
+  (write-report-header reporter ss)
 
   (when (null data)
-    (format ss "    <p>No benchmark suites found.</p>~%"))
-  
+    (write-report-empty reporter ss))
+
   (loop for table in data
-        do
-           (format ss "    <h2>~a</h2>~%" (%ih table "suite" "name"))
-           (format ss "    <div>~%")
-           (format ss "      <table>~%")
-           ;; header
-           (format ss
-                   "        <thead><tr><th>Benchmark</th>~{<th>~a</th>~}</tr></thead>~%"
-                   (coerce (%ih table "solvers") 'list))
-           (loop
-             with sum-mat = (%ih table "summary-matrix")
-             for problem across (%ih table "problems")
-             for sub-mat across sum-mat
-             do
-                (format ss "        <tr><td>~a</td>~{<td>~a</td>~}</tr>~%"
-                        problem
-                        (loop for res across sub-mat collecting res)))
-           
-           (format ss "      </table>~%")
-           (format ss "    </div>~%"))
-  (format ss "    <footer><p><em>Generated: ~a</em></p></footer>~%"
+        do (write-report-table reporter ss table))
+  (write-report-footer reporter ss))
+
+(defmethod write-report-table-row (reporter ss row table)
+  (loop for entry across (entries row)
+        do (write-report-table-entry reporter ss entry row table)))
+
+(defmethod write-report-table-entry (reporter ss entry row table)
+  (loop for val across (field-values entry)
+        for desc across (field-descriptors entry)
+        do (write-report-table-field reporter ss desc val entry row table)))
+
+(defmethod write-report-table (reporter ss table)
+  "Writes a report table"
+  ;; Write the table header. We need one cell per field per solver
+  (write-report-table-header reporter ss table)
+
+  ;; Write the table body
+  (write-report-table-body reporter ss table))
+
+(defmethod write-report-table-body (reporter ss table)
+  (loop for row across (rows table)
+        do (write-report-table-row reporter ss row table)))
+
+;;;
+;;; The HTML reporter
+;;;
+
+(defclass html-reporter ()
+  ()
+  (:documentation "A reporter that writes HTML"))
+
+(defmethod write-report-header ((reporter html-reporter) ss)
+  "Writes a report header"
+  (fmt-tab ss 0 "<!DOCTYPE html>~%<html>~%")
+  (fmt-tab ss 1 "<body>~%")
+  (fmt-tab ss 2 "<h1>Benchmark Results</h1>~%"))
+
+(defmethod write-report-footer ((reporter html-reporter) ss)
+  "Writes a report footer"
+  (fmt-tab ss 2 "<footer><p><em>Generated: ~a</em></p></footer>~%"
           (local-time:format-timestring nil (local-time:now)
                                         :format local-time:+rfc-1123-format+))
-  (format ss "  </body>
-</html>~%"))
+  (fmt-tab ss 1 "</body>~%")
+  (fmt-tab ss 0 "</html>~%"))
+
+(defun fmt-tab (stream tab-stop format &rest args)
+  "Formats with leading spaces"
+  (format stream "~a" (make-string (* 2 tab-stop) :initial-element #\Space))
+  (apply #'format stream format args))
+
+(defmethod write-report-table :before ((reporter html-reporter) ss table)
+  (fmt-tab ss 2 "<h2>~a</h2>~%" (title table))
+  (fmt-tab ss 2 "<div>~%")
+  (fmt-tab ss 3 "<table>~%"))
+
+(defmethod write-report-table :after ((reporter html-reporter) ss table)
+  (fmt-tab ss 3 "</table>~%")
+  (fmt-tab ss 2 "</div>~%"))
+
+(defmethod write-report-table-header ((reporter html-reporter) ss table)
+  (fmt-tab ss 4 "<thead>~%")
+  (fmt-tab ss 5 "<tr><th>Solvers</th>")
+  (loop with field-count = (length (field-descriptors table))
+        for solver across (solvers table)
+        do (format ss "<th colspan=~a>~a</th>" field-count solver))
+  (format ss "<tr>~%")
+  (fmt-tab ss 5 "<tr><th>Benchmarks</th>")
+  (loop for solver across (solvers table)
+        do (loop for field across (field-descriptors table)
+                 do (format ss "<th>~a</th>" (name field))))
+  (format ss "</tr>~%")
+  (fmt-tab ss 4 "<thead>~%"))
+
+(defmethod write-report-table-body :around ((reporter html-reporter) ss table)
+  (fmt-tab ss 4 "<tbody>~%")
+  (call-next-method)
+  (fmt-tab ss 4 "</tbody>~%"))
+
+(defmethod write-report-table-row :around ((reporter html-reporter) ss row table)
+  (fmt-tab ss 5 "<tr>")
+  (call-next-method)
+  (format ss "</tr>~%"))
+
+(defmethod write-report-table-row :before ((reporter html-reporter) ss row table)
+  (format ss "<td>~a</td>" (benchmark row)))
+
+(defmethod write-report-table-field
+    ((reporter html-reporter) ss descriptor value entry row table)
+  (format ss "<td>~a</td>" value))
+
+(defmethod write-report-empty ((report html-reporter) ss)
+  "Writes a notice that there are no reports in the table."
+  (fmt-tab ss 2 "<p>No benchmark suites found.</p>~%"))
+
+;;;
+;;; Text reporter
+;;;
+(defclass text-reporter ()
+  ((column-widths :accessor column-widths
+                  :initarg :column-widths
+                  :type (vector integer)
+                  :documentation "How wide each report column needs to be")
+   (current-column :accessor current-column
+                   :initarg :current-column
+                   :type integer
+                   :documentation "Which column is currently being printed"))
+  (:documentation "A reporter that just writes text"))
+
+(defmethod write-report-header ((reporter text-reporter) stream)
+  (format stream "Benchmark Results~%"))
+
+(defmethod write-report-empty ((reporter text-reporter) stream)
+  (format stream "(no suites found)~%"))
+
+(defun column-field (row ix)
+  "Gets the field for the index IX in ROW"
+  (declare (type report-row row)
+           (type integer ix))
+  (let ((orig-ix ix))
+    (loop for entry across (entries row)
+          for values = (field-values entry)
+          if (< ix (length values)) do
+            (return-from column-field (aref values ix))
+          else do
+            (setf ix (- ix (length values)))
+          end)
+    (error "Invalid column index: ~a" orig-ix)))
+
+(defmethod write-report-table :around ((reporter text-reporter) stream table)
+  ;; Compute column widths
+  (let ((col-widths (make-array (1+ (* (length (field-descriptors table))
+                                       (length (solvers table))))
+                                :element-type 'integer
+                                :initial-element 0)))
+    (loop for row across (rows table) do
+      (loop for col-width across col-widths
+            for col-ix from 0
+            ;; Special case: element 0 is the benchmark name
+            do
+               (setf (aref col-widths col-ix)
+                     (max col-width
+                          (if (zerop col-ix)
+                              (length (benchmark row))
+                              (length (column-field row (1- col-ix))))))))
+    (setf (column-widths reporter) col-widths)
+    (call-next-method)))
+
+(defmethod write-report-footer ((reporter text-reporter) stream)
+  (declare (ignore reporter stream)))
+
+(defmethod write-report-table-header ((reporter text-reporter) stream table)
+  (format stream "Suite: ~a~%" (title table))
+  (let ((bar-length (+ (reduce #'+ (column-widths reporter))
+                       (* 3 (length (column-widths reporter))))))
+    (format stream "~a " (str:fit (aref (column-widths reporter) 0)
+                                 "Solvers"
+                                 :pad-side :center))
+    (loop with field-count = (length (field-descriptors table))
+          with field-widths = (+ (reduce #'+ (column-widths reporter) :start 1)
+                                 field-count)
+          for solver across (solvers table)
+          do (format stream "| ~a" (str:fit field-widths solver :pad-side :center)))
+    (format stream "~&~a " (str:fit (aref (column-widths reporter) 0)
+                                    "Benchmarks"
+                                    :pad-side :center))
+    (loop for solver across (solvers table)
+          do (loop for field across (field-descriptors table)
+                   for field-ix from 1
+                   do (format stream "| ~a" (str:fit (aref (column-widths reporter)
+                                                          field-ix)
+                                                    (name field)
+                                                    :pad-side :center))))
+    (format stream "~&~a~%" (make-string bar-length :initial-element #\-)))
+  nil)
+
+(defmethod write-report-table-row :before ((reporter text-reporter) stream row table)
+  (let ((benchmark (benchmark row)))
+    (format stream
+            "~a~a "
+            benchmark
+            (make-string (- (aref (column-widths reporter) 0) (length benchmark))
+                         :initial-element #\Space)))
+  (setf (current-column reporter) 0))
+
+(defmethod write-report-table-row :after ((reporter text-reporter) stream row table)
+  (terpri stream))
+
+(defmethod write-report-table-field
+    ((reporter text-reporter) stream descriptor value entry row table)
+  (incf (current-column reporter))
+  (let ((width (aref (column-widths reporter) (current-column reporter))))
+    (format stream "| ~a~a "
+            value
+            (make-string (- width (length value)) :initial-element #\Space))))
