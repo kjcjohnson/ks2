@@ -6,7 +6,7 @@
   (:local-nicknames (#:ks2 #:com.kjcjohnson.ks2)
                     (#:runner #:com.kjcjohnson.ks2.runner)
                     (#:a #:alexandria)
-                    (#:v #:verbose))
+                    (#:v #:org.shirakumo.verbose))
   ;; Problems
   (:export #:problem #:make-problem #:run-problem)
 
