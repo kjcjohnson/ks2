@@ -27,19 +27,25 @@
    (format :reader field-format
            :initarg :field-format
            :type string
-           :documentation "How to format this field"))
+           :documentation "How to format this field")
+   (transformer :reader field-transformer
+                :initarg :transformer
+                :type function
+                :documentation "A function to transform the report data field prior to
+passing to the formatting code"))
   (:documentation "A specific point of data in a report"))
 
 (defmethod print-object ((obj report-field-descriptor) stream)
   (print-unreadable-object (obj stream)
     (format stream "RFD: ~a" (id obj))))
 
-(defun make-report-field-descriptor (id &key name location format)
+(defun make-report-field-descriptor (id &key name location format transformer)
   "Makes a field descriptor"
   (make-instance 'report-field-descriptor :id id
                                           :name name
                                           :location location
-                                          :field-format format))
+                                          :field-format format
+                                          :transformer transformer))
 
 (defclass report-entry ()
   ((solver :accessor solver
@@ -96,41 +102,66 @@
 (defun get-report-field-descriptor (id)
   "Converts a field string to a field descriptor"
   (declare (type string id))
-  (flet ((mrfd (id &optional format name)
+  (flet ((mrfd (id &optional format name transformer)
            (let* ((location (str:downcase (symbol-name id)))
                   (format (or format "~a"))
-                  (name (or name (str:title-case (str:replace-all "-" " " location)))))
+                  (name (or name (str:title-case (str:replace-all "-" " " location))))
+                  (transformer (or transformer #'identity)))
              (make-report-field-descriptor id :name name
                                               :location location
-                                              :format format))))
-    (str:string-case (str:downcase (str:replace-all " " "-" id))
-      ("status" (mrfd :status))
-      ("name" (mrfd :name))
-      ("solver" (mrfd :solver))
-      ("run-time" (mrfd :run-time "~5f"))
-      ("time" (mrfd :run-time "~5f"))
-      ("peak-memory" (mrfd :peak-memory))
-      ("memory" (mrfd :peak-memory))
-      ("program" (mrfd :program))
-      ("verify-rate" (mrfd :verify-rate))
-      ("concrete-candidate-counter" (mrfd :concrete-candidate-counter))
-      ("concrete-counter" (mrfd :concrete-candidate-counter))
-      ("concrete" (mrfd :concrete-candidate-counter))
-      ("partial-candidate-counter" (mrfd :partial-candidate-counter))
-      ("partial-counter" (mrfd :partial-candidate-counter))
-      ("partial" (mrfd :partial-candidate-counter))
-      ("rate" (mrfd :verify-rate))
-      ("specification-types" (mrfd :specification-types))
-      ("summary" (mrfd :summary))
-      (otherwise (error "Unknown field: ~a" id)))))
+                                              :format format
+                                              :transformer transformer)))
+         (coerce-to-list (seq)
+           "Coerces SEQ to a list"
+           (coerce seq 'list)))
+    (let ((pieces (str:split #\; id))
+          (opts nil))
+      (loop for piece in (cdr pieces)
+            for (key value) = (str:split #\= piece :limit 2)
+            do (push (cons (str:downcase key) value) opts))
+      (let ((name (cdr (assoc "name" opts :test #'string=))))
+        (str:string-case (str:downcase (str:replace-all " " "-" (car pieces)))
+          ("status" (mrfd :status nil name))
+          ("name" (mrfd :name nil name))
+          ("solver" (mrfd :solver nil name))
+          ("run-time" (mrfd :run-time "~5f" name))
+          ("time" (mrfd :run-time "~5f" name))
+          ("peak-memory" (mrfd :peak-memory nil name))
+          ("memory" (mrfd :peak-memory nil name))
+          ("program" (mrfd :program nil name))
+          ("verify-rate" (mrfd :verify-rate nil name))
+          ("concrete-candidate-counter" (mrfd :concrete-candidate-counter nil name))
+          ("concrete-counter" (mrfd :concrete-candidate-counter nil name))
+          ("concrete" (mrfd :concrete-candidate-counter nil name))
+          ("partial-candidate-counter" (mrfd :partial-candidate-counter nil name))
+          ("partial-counter" (mrfd :partial-candidate-counter nil name))
+          ("partial" (mrfd :partial-candidate-counter nil name))
+          ("rate" (mrfd :verify-rate nil name))
+          ("specification-types" (mrfd :specification-types nil name))
+          ("summary" (mrfd :summary nil name))
+          ("prune-candidate-counter" (mrfd :prune-candidate-counter nil name))
+          ("prune-attempt-counter" (mrfd :prune-attempt-counter nil name))
+          ("prune-success-counter" (mrfd :prune-success-counter nil name))
+          ("prune-success-rate" (mrfd :prune-success-rate "~,2f" name))
+          ("prune-success" (mrfd :prune-success-rate "~,2f" name))
+          ("concrete-candidates-by-size" (mrfd :concrete-candidates-by-size
+                                               "~{[~a]: ~a~^, ~}" name
+                                               #'coerce-to-list))
+          ("by-size" (mrfd :concrete-candidates-by-size
+                           "~{[~a]: ~a~^, ~}" name
+                           #'coerce-to-list))
+          ("checkpoint-times" (mrfd :checkpoint-times
+                                    "~{[~a]: ~,1f~^, ~}" name #'coerce-to-list))
+          (otherwise (error "Unknown field: ~a" id)))))))
 
 (defun get-report-field (field result-entry summary-entry)
   "Gets a report field from entries"
   (format nil
           (field-format field)
-          (if (string= "summary" (location field))
-              summary-entry
-              (%ih result-entry (location field)))))
+          (funcall (field-transformer field)
+                   (if (string= "summary" (location field))
+                       summary-entry
+                       (%ih result-entry (location field))))))
 
 (defun parse-report-into-table (data &optional (fields '("summary")) solvers)
   "Parses suite data in DATA (as a hash table) into a report object, with the specified
@@ -417,7 +448,7 @@ on TABLE with REPORTER to STREAM."))
     (loop for solver across (solvers table)
           do (loop for field across (field-descriptors table)
                    for field-ix from 1
-                   do (format stream "| ~a" (str:fit (aref (column-widths reporter)
+                   do (format stream "| ~a " (str:fit (aref (column-widths reporter)
                                                           field-ix)
                                                     (name field)
                                                     :pad-side :center))))

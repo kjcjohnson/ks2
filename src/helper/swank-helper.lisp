@@ -45,6 +45,12 @@
 (defslimefun get-partial-candidate-counter ()
   ast:*candidate-partial-programs*)
 
+(defslimefun get-concrete-candidates-by-size ()
+  ast:*concrete-candidates-by-size*)
+
+(defslimefun get-checkpoint-times ()
+  ast:*checkpoint-times*)
+
 (defslimefun force-gc ()
   (trivial-garbage:gc :full t))
 
@@ -69,6 +75,10 @@
   (setf ast:*execution-counter* 0)
   (setf ast:*candidate-concrete-programs* 0)
   (setf ast:*candidate-partial-programs* 0)
+  (setf ast:*prune-candidate-counter* 0)
+  (setf ast:*prune-attempt-counter* 0)
+  (setf ast:*prune-success-counter* 0)
+  (ast:clear-all-checkpoints)
   (trivial-garbage:gc :full t)
   t)
 
@@ -93,8 +103,8 @@
 (defslimefun solver-name (solver-designator)
   (solver-api:solver-name solver-designator))
 
-(defslimefun solver-symbol (solver-designator)
-  (solver-api:solver-symbol solver-designator))
+(defslimefun solver-symbols (solver-designator)
+  (solver-api:solver-symbols solver-designator))
 
 (defslimefun solver-description (solver-designator)
   (solver-api:solver-description solver-designator))
@@ -121,12 +131,26 @@
                                        (semgus:specification problem)
                                        (semgus:context problem))))
 
+(defmethod solver-api:smt-solver-configuration (solver &key &allow-other-keys)
+  "Default cvc5 SMT solver"
+  (make-instance 'smt:solver*
+                 :program (u:locate-file "cvc5"
+                                         :optional-suffix "exe")
+                 :arguments (smt:arguments smt:*cvc5*)))
+
+(defmethod solver-api:smt-solver-configuration :around (solver &key &allow-other-keys)
+  "Looks for a solver at the right location"
+  (let ((config (call-next-method)))
+    (if (pathnamep (smt:program config))
+        config
+        (make-instance 'smt:solver*
+                       :program (u:locate-file (smt:program config)
+                                               :optional-suffix "exe")
+                       :arguments (smt:arguments config)))))
+
 (defun do-solve-problem (solver-designator problem options)
   "Solves a problem."
-  (let ((solver-spec (make-instance 'smt:solver*
-                                    :program (u:locate-file "cvc5"
-                                                            :optional-suffix "exe")
-                                    :arguments (smt:arguments smt:*cvc5*))))
+  (let ((solver-spec (solver-api:smt-solver-configuration solver-designator)))
     (smt:with-lazy-solver (solver-spec)
       (apply #'solver-api:solve-problem solver-designator problem options))))
 
@@ -141,23 +165,25 @@
   "Creates a results object to pass back"
   ;; TODO: create and serialize results into a proxy object
   (list
-   :program
-   (cond
-     ((and (listp results) (= 1 (length results)))
-      (actually-print-program-node (first results)))
-     ((typep results 'sequence)
-      (format nil "~s"
-              (map 'list #'actually-print-program-node results)))
-     (t
-      (actually-print-program-node results)))
-   :time
-   (/ delta-internal-time internal-time-units-per-second)
-   :spec-types
-   (%get-spec-types problem)))
+   :program (cond
+              ((and (listp results) (= 1 (length results)))
+               (actually-print-program-node (first results)))
+              ((typep results 'sequence)
+               (format nil "~s"
+                       (map 'list #'actually-print-program-node results)))
+              (t
+               (actually-print-program-node results)))
+   :time (/ delta-internal-time internal-time-units-per-second)
+   :spec-types (%get-spec-types problem)
+   :checkpoint-times ast:*checkpoint-times*
+   :prune-candidate-counter ast:*prune-candidate-counter*
+   :prune-attempt-counter ast:*prune-attempt-counter*
+   :prune-success-counter ast:*prune-success-counter*))
 
 
 (defslimefun solve-problem
     (solver-designator problem-file &rest options &key &allow-other-keys)
+  (apply #'solver-api:initialize-solver solver-designator options)
   (let* ((problem (maybe-load-problem-file problem-file))
          (new-p (transform-problem solver-designator problem)))
 

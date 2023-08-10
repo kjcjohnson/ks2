@@ -35,6 +35,14 @@
   "Gets the candidate partial program counter in a child lisp environment."
   (ok-or-fail (rpc-call/sync child-lisp '(helper:get-partial-candidate-counter))))
 
+(defun get-concrete-candidates-by-size (child-lisp)
+  "Gets the concrete candidates size mapping in a child lisp environment."
+  (ok-or-fail (rpc-call/sync child-lisp '(helper:get-concrete-candidates-by-size))))
+
+(defun get-checkpoint-times (child-lisp)
+  "Gets the times associated with each checkpoint in a child lisp environment"
+  (ok-or-fail (rpc-call/sync child-lisp '(helper:get-checkpoint-times))))
+
 (defun get-statistics (child-lisp)
   "Gets statistics from a child lisp environment"
   (ok-or-fail (rpc-call/sync child-lisp '(helper:get-statistics))))
@@ -68,9 +76,9 @@
   (ok-or-fail
    (rpc-call/sync child-lisp `(helper:solver-name ,solver-designator))))
 
-(defun solver-symbol (child-lisp solver-designator)
+(defun solver-symbols (child-lisp solver-designator)
   (ok-or-fail
-   (rpc-call/sync child-lisp `(helper:solver-symbol ,solver-designator))))
+   (rpc-call/sync child-lisp `(helper:solver-symbols ,solver-designator))))
 
 (defun solver-description (child-lisp solver-designator)
   (ok-or-fail

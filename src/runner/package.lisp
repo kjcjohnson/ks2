@@ -5,8 +5,10 @@
   (:export #:get-used-dynamic-space
            #:get-total-dynamic-space
            #:get-execution-counter
+           #:get-checkpoint-times
            #:get-concrete-candidate-counter
            #:get-partial-candidate-counter
+           #:get-concrete-candidates-by-size
            #:get-statistics
            #:force-gc
            #:get-gc-run-time
@@ -18,7 +20,7 @@
            #:load-problem-file)
   (:export #:list-solvers
            #:solver-name
-           #:solver-symbol
+           #:solver-symbols
            #:solver-description
            #:solver-action
            #:solver-options
@@ -30,7 +32,9 @@
                     (#:ks2 #:com.kjcjohnson.ks2))
   (:export #:init-and-start-swank #:main #:main2)
   (:export #:get-execution-counter
+           #:get-checkpoint-times
            #:get-concrete-candidate-counter
-           #:get-partial-candidate-counter)
+           #:get-partial-candidate-counter
+           #:get-concrete-candidates-by-size)
   (:import-from #:swank
                 #:defslimefun))

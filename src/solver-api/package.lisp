@@ -8,7 +8,7 @@
            #:list-solvers)
   ;; Metadata API
   (:export #:solver-name
-           #:solver-symbol
+           #:solver-symbols
            #:solver-description
            #:solver-action
            #:solver-options
@@ -17,4 +17,6 @@
            #:define-solver-metadata)
   ;; Solving API
   (:export #:transform-specification
+           #:smt-solver-configuration
+           #:initialize-solver
            #:solve-problem))

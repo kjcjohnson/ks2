@@ -22,8 +22,9 @@
 (defgeneric solver-name (solver-designator)
   (:documentation "Gets the friendly name associated with SOLVER-DESIGNATOR"))
 
-(defgeneric solver-symbol (solver-designator)
-  (:documentation "Gets the symbol name for this solver (e.g., on command line)"))
+(defgeneric solver-symbols (solver-designator)
+  (:documentation "Gets the symbol name and aliases for this solver
+(e.g., on command line). Returns a list of strings."))
 
 (defgeneric solver-description (solver-designator)
   (:documentation "Gets the description associated with SOLVER-DESIGNATOR"))
@@ -51,7 +52,8 @@ of SOLVER-OPTION structures."))
                                     options spec-transformer)
   `(progn
      (defmethod solver-name ((solver (eql ,designator))) ,name)
-     (defmethod solver-symbol ((solver (eql ,designator))) ,symbol)
+     (defmethod solver-symbols ((solver (eql ,designator)))
+       ,(if (listp symbol) `(list ,@symbol) `(list ,symbol)))
      (defmethod solver-description ((solver (eql ,designator))) ,description)
      (defmethod solver-action ((solver (eql ,designator))) ,action)
      (defmethod solver-options ((solver (eql ,designator))) ,options)
@@ -66,7 +68,21 @@ of SOLVER-OPTION structures."))
 (defgeneric transform-specification (solver-designator specification context)
   (:documentation "Transforms SPECIFICATION into a format usable by a solver
 designated by SOLVER-DESIGNATOR with the problem context CONTEXT. This function may
-return NIL if the solver does not support problems with the given specification."))
+return NIL if the solver does not support problems with the given specification.")
+  (:method (solver-designator specification context)
+    "Default no-op method"
+    (declare (ignore solver-designator context))
+    specification))
+
+(defgeneric smt-solver-configuration (solver-designator &key &allow-other-keys)
+  (:documentation "Gets the SMT solver configuration desired by SOLVER-DESIGNATOR. A
+core should always provide a default implementation of this method."))
+
+(defgeneric initialize-solver (solver-designator &key &allow-other-keys)
+  (:documentation "Sets up the solver designated by SOLVER-DESIGNATOR with options")
+  (:method (solver-designator &key &allow-other-keys)
+    (declare (ignore solver-designator))
+    nil))
 
 (defgeneric solve-problem (solver-designator semgus-problem &key &allow-other-keys)
   (:documentation "Solves SEMGUS-PROBLEM with a solver designated by SOLVER-DESIGNATOR.

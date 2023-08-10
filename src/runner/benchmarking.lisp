@@ -3,21 +3,20 @@
 ;;;;
 (in-package #:com.kjcjohnson.ks2.runner)
 
-(defun start-solver (child-lisp problem-file solver)
+(defun start-solver (child-lisp problem-file solver &optional options)
   "Starts a solver and returns a promise for the result."
-  (ecase solver
+  (case solver
+    ;; Once we confirm that these defaults get set elsewhere, we can remove this block
     (:enum
-     (solve-problem/promise child-lisp :bottom-up-enum problem-file
-                                       :max-depth 20))
+     (apply #'solve-problem/promise child-lisp :bottom-up-enum problem-file
+                                             :max-depth 20
+                                             options))
     (:duet
-     (solve-problem/promise child-lisp :duet problem-file
-                                       :depth 20))
-    (:frangel
-     (solve-problem/promise child-lisp :frangel problem-file))
-    (:random
-     (solve-problem/promise child-lisp :random problem-file))
-    (:tde
-     (solve-problem/promise child-lisp :top-down-enum problem-file))))
+     (apply #'solve-problem/promise child-lisp :duet problem-file
+                                               :depth 20
+                                               options))
+    (otherwise
+     (apply #'solve-problem/promise child-lisp solver problem-file options))))
 
 (defun internal-time-to-seconds (internal-time)
   "Converts internal time to seconds."

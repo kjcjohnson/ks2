@@ -49,13 +49,40 @@
    (partial-candidate-counter :reader partial-candidate-counter
                               :initarg :partial-candidate-counter
                               :type number
-                              :documentation "Count of partial candidates considered"))
+                              :documentation "Count of partial candidates considered")
+   (concrete-candidates-by-size :reader concrete-candidates-by-size
+                                :initarg :concrete-candidates-by-size
+                                :type list
+                                :documentation "Plist of size --> candidates")
+   (checkpoint-times :reader checkpoint-times
+                     :initarg :checkpoint-times
+                     :type list
+                     :documentation "Plist of checkpoint --> time in seconds")
+   (prune-candidate-counter :reader prune-candidate-counter
+                            :initarg :prune-candidate-counter
+                            :type number
+                            :documentation "Count of candidates considered for pruning")
+   (prune-attempt-counter :reader prune-attempt-counter
+                          :initarg :prune-attempt-counter
+                          :type number
+                          :documentation "Count of candidates tried to prune")
+   (prune-success-counter :reader prune-success-counter
+                          :initarg :prune-success-counter
+                          :type number
+                          :documentation "Count of candidates successfully pruned")
+   (prune-success-rate :reader prune-success-rate
+                       :initarg :prune-success-rate
+                       :type number
+                       :documentation "Ratio of successful prunes to all prunes"))
   (:documentation "Results from running a problem."))
 
 (defun make-problem-result
     (name solver solved?
      run-time peak-memory program verify-rate specification-types
-     concrete-candidate-counter partial-candidate-counter)
+     concrete-candidate-counter partial-candidate-counter
+     concrete-candidates-by-size checkpoint-times
+     prune-candidate-counter prune-attempt-counter prune-success-counter
+     prune-success-rate)
   "Makes problem results"
   (make-instance 'problem-result
                  :name (string name)
@@ -71,27 +98,54 @@
                            ((and (not solved?)) :timeout)
                            (solved? :solved))
                  :concrete-candidate-counter concrete-candidate-counter
-                 :partial-candidate-counter partial-candidate-counter))
+                 :partial-candidate-counter partial-candidate-counter
+                 :concrete-candidates-by-size concrete-candidates-by-size
+                 :checkpoint-times checkpoint-times
+                 :prune-candidate-counter prune-candidate-counter
+                 :prune-attempt-counter prune-attempt-counter
+                 :prune-success-counter prune-success-counter
+                 :prune-success-rate prune-success-rate))
 
-(defun make-problem-result-for-crash (name solver)
+(defun make-problem-result-for-crash (name solver &key live)
   "Makes a problem result for a crashed solver run"
   (make-instance 'problem-result
                  :name (string name)
                  :solver (string solver)
+                 :run-time (runner::internal-time-to-seconds
+                            (- (get-internal-real-time) (getf live :start-time)))
+                 :peak-memory (getf live :max-memory)
+                 :concrete-candidate-counter (getf live :concrete-candidate-counter)
+                 :partial-candidate-counter (getf live :partial-candidate-counter)
+                 :concrete-candidates-by-size (getf live :concrete-candidates-by-size)
+                 :checkpoint-times (getf live :checkpoint-times)
                  :status :crash))
 
-(defun make-problem-result-for-error (name solver)
+(defun make-problem-result-for-error (name solver &key live)
   "Makes a problem result for an erroring solver run"
   (make-instance 'problem-result
                  :name (string name)
                  :solver (string solver)
+                 :run-time (runner::internal-time-to-seconds
+                            (- (get-internal-real-time) (getf live :start-time)))
+                 :peak-memory (getf live :max-memory)
+                 :concrete-candidate-counter (getf live :concrete-candidate-counter)
+                 :partial-candidate-counter (getf live :partial-candidate-counter)
+                 :concrete-candidates-by-size (getf live :concrete-candidates-by-size)
+                 :checkpoint-times (getf live :checkpoint-times)
                  :status :error))
 
-(defun make-problem-result-for-unknown (name solver)
+(defun make-problem-result-for-unknown (name solver &key live)
   "Makes a problem result for an unknown error"
   (make-instance 'problem-result
                  :name (string name)
                  :solver (string solver)
+                 :run-time (runner::internal-time-to-seconds
+                            (- (get-internal-real-time) (getf live :start-time)))
+                 :peak-memory (getf live :max-memory)
+                 :concrete-candidate-counter (getf live :concrete-candidate-counter)
+                 :partial-candidate-counter (getf live :partial-candidate-counter)
+                 :concrete-candidates-by-size (getf live :concrete-candidates-by-size)
+                 :checkpoint-times (getf live :checkpoint-times)
                  :status :unknown))
 
 (defun print-result (result)

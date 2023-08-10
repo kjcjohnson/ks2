@@ -13,7 +13,7 @@
                              "--disable-ldb"
                              "--lose-on-corruption"
                              "--dynamic-space-size"
-                             "2048" ; MiB
+                             "8192" ; MiB
                              "--end-runtime-options"
 
                              "--eval"

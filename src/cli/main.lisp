@@ -3,17 +3,6 @@
 ;;;;
 (in-package #:com.kjcjohnson.ks2.cli)
 
-(defun %normalize-solver (solver-string)
-  ;; Technically we need to look this up in the core...
-  (str:string-case (str:downcase solver-string)
-    ("tde" :tde)
-    ("top-down-enum" :tde)
-    ("enum" :enum)
-    ("duet" :duet)
-    ("frangel" :frangel)
-    ("random" :random)
-    (otherwise (error "Invalid solver: ~a" solver-string))))
-
 ;;;
 ;;; Common options
 ;;;
@@ -26,6 +15,17 @@
    :long-name "core"
    :key :core
    :env-vars '("KS2_CORE")))
+
+(defun %option/timeout ()
+  "Option for specifying a timeout"
+  (clingon:make-option
+   :integer
+   :description "timeout for problem files"
+   :short-name #\t
+   :long-name "timeout"
+   :key :timeout
+   :initial-value 120
+   :env-vars '("KS2_TIMEOUT")))
 
 ;;;
 ;;; Solve command
@@ -40,16 +40,18 @@
     :long-name "solver"
     :key :solver
     :env-vars '("KS2_SOLVER"))
+   (%option/timeout)
    (%option/core)))
 
 (defun solve/handler (cmd)
   "Handler for solving problems"
   (let ((solver (clingon:getopt cmd :solver))
+        (timeout (clingon:getopt cmd :timeout))
         (problems (clingon:command-arguments cmd)))
     (when (zerop (length problems))
       (format *error-output* "~&error: no problems to solve specified~%")
       (clingon:exit 1))
-    (invoke-solve (%normalize-solver solver) problems)))
+    (invoke-solve (sv:normalize-solver solver) problems :timeout timeout)))
 
 (defun solve/command ()
   "Command for solving individual SemGuS problems"
@@ -91,14 +93,16 @@
     :key :output-path
     :initial-value "data"
     :env-vars '("KS2_OUTPUT_PATH"))
+   (%option/timeout)
    (%option/core)))
 
 (defun benchmark/handler (cmd)
   "Handler for benchmarking solvers"
-  (let ((solvers (map 'list #'%normalize-solver (clingon:getopt cmd :solvers)))
+  (let ((solvers (map 'list #'sv:normalize-solver (clingon:getopt cmd :solvers)))
         (output-format (clingon:getopt cmd :output-format))
         (output-path (clingon:getopt cmd :output-path))
-        (suite-dir (clingon:command-arguments cmd)))
+        (suite-dir (clingon:command-arguments cmd))
+        (timeout (clingon:getopt cmd :timeout)))
     (if (= 1 (length suite-dir))
         (setf suite-dir (first suite-dir))
         (progn
@@ -106,7 +110,8 @@
           (clingon:exit 1)))
     (invoke-benchmark suite-dir solvers
                       :output-format output-format
-                      :output-path output-path)))
+                      :output-path output-path
+                      :timeout timeout)))
     
 (defun benchmark/command ()
   "Command for running solvers against SemGuS benchmarks"

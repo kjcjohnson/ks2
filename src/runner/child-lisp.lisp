@@ -228,4 +228,10 @@ if the continuation is not registered in the table yet."
   "Ends a child lisp session."
   (when (bt:thread-alive-p (child-lisp-response-thread child-lisp))
     (bt:destroy-thread (child-lisp-response-thread child-lisp))) ; DANGEROUS! FIXME
-  (uiop:terminate-process (child-lisp-process child-lisp) :urgent urgent))
+  ;; Ask nicely first
+  (uiop:terminate-process (child-lisp-process child-lisp))
+  (loop for i from 0 to 150
+        while (uiop:process-alive-p (child-lisp-process child-lisp))
+        do (sleep 0.001))
+  (when (uiop:process-alive-p (child-lisp-process child-lisp))
+    (uiop:terminate-process (child-lisp-process child-lisp) :urgent urgent)))

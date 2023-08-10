@@ -5,13 +5,16 @@
   :depends-on ("str"
                "alexandria"
                "verbose"
+               "parse-number"
                "com.kjcjohnson.ks2/parser"
-               "com.kjcjohnson.ks2/utilities")
+               "com.kjcjohnson.ks2/utilities"
+               "com.kjcjohnson.ks2/solver-api")
   :pathname "src"
   :serial t
   :components ((:module "solving"
                 :serial t
                 :components ((:file "package")
+                             (:file "solver-config")
                              (:file "problem")
                              (:file "suite")
                              (:file "results")

@@ -7,7 +7,7 @@
   (:documentation "Writes RESULT with format FORMAT. OUTPUT-SPEC is either a
 directory pathname (to write to file), t to write to stdout, or nil for a string."))
 
-(defun invoke-benchmark (suite-dir solvers &key output-format output-path)
+(defun invoke-benchmark (suite-dir solvers &key output-format output-path timeout)
   "Invokes a benchmark suite"
   (let ((suite-pathname (u:rationalize-namestring suite-dir :directory t))
         (output-pathname (u:rationalize-namestring output-path :directory t)))
@@ -17,7 +17,7 @@ directory pathname (to write to file), t to write to stdout, or nil for a string
     (let* ((suite (sv:make-suite-from-directory
                    suite-pathname
                    :transformer #'ks2:ensure-sexp-benchmark-file))
-           (results (sv:run-suite suite solvers)))
+           (results (sv:run-suite suite solvers :timeout timeout)))
       (write-result output-format results output-pathname))))
 
 
