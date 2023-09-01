@@ -112,7 +112,7 @@
                       :output-format output-format
                       :output-path output-path
                       :timeout timeout)))
-    
+
 (defun benchmark/command ()
   "Command for running solvers against SemGuS benchmarks"
   (clingon:make-command
@@ -158,7 +158,14 @@
     :short-name #\o
     :long-name "output"
     :key :output-path
-    :env-vars '("KS2_OUTPUT_FILE"))))
+    :env-vars '("KS2_OUTPUT_FILE"))
+   (clingon:make-option
+    :list
+    :description "report style configuration options (multiple allowed)"
+    :short-name #\y
+    :long-name "style"
+    :key :styles
+    :env-vars '("KS2_REPORT_STYLE"))))
 
 (defun report/handler (cmd)
   "Handler for the report generation command"
@@ -166,8 +173,10 @@
         (reporter (clingon:getopt cmd :reporter))
         (fields (clingon:getopt cmd :fields))
         (solvers (clingon:getopt cmd :solvers))
+        (styles (clingon:getopt cmd :styles))
         (json-files (clingon:command-arguments cmd)))
-    (invoke-report reporter json-files output-file (or fields '("summary")) solvers)))
+    (invoke-report reporter json-files output-file
+                   (or fields '("summary")) solvers styles)))
 
 (defun report/command ()
   "Command for generating a report from benchmark data files"

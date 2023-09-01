@@ -32,20 +32,25 @@
                 :initarg :transformer
                 :type function
                 :documentation "A function to transform the report data field prior to
-passing to the formatting code"))
+passing to the formatting code")
+   (options :reader field-options
+            :initarg :options
+            :type list ; alist
+            :documentation "Alist of raw field options"))
   (:documentation "A specific point of data in a report"))
 
 (defmethod print-object ((obj report-field-descriptor) stream)
   (print-unreadable-object (obj stream)
     (format stream "RFD: ~a" (id obj))))
 
-(defun make-report-field-descriptor (id &key name location format transformer)
+(defun make-report-field-descriptor (id &key name location format transformer options)
   "Makes a field descriptor"
   (make-instance 'report-field-descriptor :id id
                                           :name name
                                           :location location
                                           :field-format format
-                                          :transformer transformer))
+                                          :transformer transformer
+                                          :options options))
 
 (defclass report-entry ()
   ((solver :accessor solver
@@ -59,7 +64,15 @@ passing to the formatting code"))
    (field-values :accessor field-values
                  :initarg :field-values
                  :type (vector string)
-                 :documentation "Values of fields in this entry"))
+                 :documentation "Values of fields in this entry")
+   (style-field-descriptors :accessor style-field-descriptors
+                            :initarg :style-field-descriptors
+                            :type (vector report-field-descriptor)
+                            :documentation "Extra fields for styles")
+   (style-field-values :accessor style-field-values
+                       :initarg :style-field-values
+                       :type (vector string)
+                       :documentation "Values of style fields in this entry"))
   (:documentation "A collection of fields used in a report row"))
 
 (defmethod print-object ((obj report-entry) stream)
@@ -89,6 +102,10 @@ passing to the formatting code"))
             :initarg :solvers
             :type vector ; TODO: more specific
             :documentation "Vector of solvers in this table")
+   (styles :reader styles
+           :initarg :styles
+           :type list
+           :documentation "List of report style configuration objects")
    (field-descriptors :accessor field-descriptors
                       :initarg :fields
                       :type (vector field-descriptor)
@@ -102,57 +119,58 @@ passing to the formatting code"))
 (defun get-report-field-descriptor (id)
   "Converts a field string to a field descriptor"
   (declare (type string id))
-  (flet ((mrfd (id &optional format name transformer)
-           (let* ((location (str:downcase (symbol-name id)))
-                  (format (or format "~a"))
-                  (name (or name (str:title-case (str:replace-all "-" " " location))))
-                  (transformer (or transformer #'identity)))
-             (make-report-field-descriptor id :name name
-                                              :location location
-                                              :format format
-                                              :transformer transformer)))
-         (coerce-to-list (seq)
-           "Coerces SEQ to a list"
-           (coerce seq 'list)))
-    (let ((pieces (str:split #\; id))
-          (opts nil))
-      (loop for piece in (cdr pieces)
-            for (key value) = (str:split #\= piece :limit 2)
-            do (push (cons (str:downcase key) value) opts))
-      (let ((name (cdr (assoc "name" opts :test #'string=))))
-        (str:string-case (str:downcase (str:replace-all " " "-" (car pieces)))
-          ("status" (mrfd :status nil name))
-          ("name" (mrfd :name nil name))
-          ("solver" (mrfd :solver nil name))
-          ("run-time" (mrfd :run-time "~5f" name))
-          ("time" (mrfd :run-time "~5f" name))
-          ("peak-memory" (mrfd :peak-memory nil name))
-          ("memory" (mrfd :peak-memory nil name))
-          ("program" (mrfd :program nil name))
-          ("verify-rate" (mrfd :verify-rate nil name))
-          ("concrete-candidate-counter" (mrfd :concrete-candidate-counter nil name))
-          ("concrete-counter" (mrfd :concrete-candidate-counter nil name))
-          ("concrete" (mrfd :concrete-candidate-counter nil name))
-          ("partial-candidate-counter" (mrfd :partial-candidate-counter nil name))
-          ("partial-counter" (mrfd :partial-candidate-counter nil name))
-          ("partial" (mrfd :partial-candidate-counter nil name))
-          ("rate" (mrfd :verify-rate nil name))
-          ("specification-types" (mrfd :specification-types nil name))
-          ("summary" (mrfd :summary nil name))
-          ("prune-candidate-counter" (mrfd :prune-candidate-counter nil name))
-          ("prune-attempt-counter" (mrfd :prune-attempt-counter nil name))
-          ("prune-success-counter" (mrfd :prune-success-counter nil name))
-          ("prune-success-rate" (mrfd :prune-success-rate "~,2f" name))
-          ("prune-success" (mrfd :prune-success-rate "~,2f" name))
-          ("concrete-candidates-by-size" (mrfd :concrete-candidates-by-size
-                                               "~{[~a]: ~a~^, ~}" name
-                                               #'coerce-to-list))
-          ("by-size" (mrfd :concrete-candidates-by-size
-                           "~{[~a]: ~a~^, ~}" name
-                           #'coerce-to-list))
-          ("checkpoint-times" (mrfd :checkpoint-times
-                                    "~{[~a]: ~,1f~^, ~}" name #'coerce-to-list))
-          (otherwise (error "Unknown field: ~a" id)))))))
+  (let ((opts nil))
+    (flet ((mrfd (id &optional format name transformer)
+             (let* ((location (str:downcase (symbol-name id)))
+                    (format (or format "~a"))
+                    (name (or name (str:title-case (str:replace-all "-" " " location))))
+                    (transformer (or transformer #'identity)))
+               (make-report-field-descriptor id :name name
+                                                :location location
+                                                :format format
+                                                :transformer transformer
+                                                :options opts)))
+           (coerce-to-list (seq)
+             "Coerces SEQ to a list"
+             (coerce seq 'list)))
+      (let ((pieces (str:split #\; id)))
+        (loop for piece in (cdr pieces)
+              for (key value) = (str:split #\= piece :limit 2)
+              do (push (cons (str:downcase key) value) opts))
+        (let ((name (cdr (assoc "name" opts :test #'string=))))
+          (str:string-case (str:downcase (str:replace-all " " "-" (car pieces)))
+            ("status" (mrfd :status nil name))
+            ("name" (mrfd :name nil name))
+            ("solver" (mrfd :solver nil name))
+            ("run-time" (mrfd :run-time "~5f" name))
+            ("time" (mrfd :run-time "~5f" name))
+            ("peak-memory" (mrfd :peak-memory nil name))
+            ("memory" (mrfd :peak-memory nil name))
+            ("program" (mrfd :program nil name))
+            ("verify-rate" (mrfd :verify-rate nil name))
+            ("concrete-candidate-counter" (mrfd :concrete-candidate-counter nil name))
+            ("concrete-counter" (mrfd :concrete-candidate-counter nil name))
+            ("concrete" (mrfd :concrete-candidate-counter nil name))
+            ("partial-candidate-counter" (mrfd :partial-candidate-counter nil name))
+            ("partial-counter" (mrfd :partial-candidate-counter nil name))
+            ("partial" (mrfd :partial-candidate-counter nil name))
+            ("rate" (mrfd :verify-rate nil name))
+            ("specification-types" (mrfd :specification-types nil name))
+            ("summary" (mrfd :summary nil name))
+            ("prune-candidate-counter" (mrfd :prune-candidate-counter nil name))
+            ("prune-attempt-counter" (mrfd :prune-attempt-counter nil name))
+            ("prune-success-counter" (mrfd :prune-success-counter nil name))
+            ("prune-success-rate" (mrfd :prune-success-rate "~,2f" name))
+            ("prune-success" (mrfd :prune-success-rate "~,2f" name))
+            ("concrete-candidates-by-size" (mrfd :concrete-candidates-by-size
+                                                 "~{[~a]: ~a~^, ~}" name
+                                                 #'coerce-to-list))
+            ("by-size" (mrfd :concrete-candidates-by-size
+                             "~{[~a]: ~a~^, ~}" name
+                             #'coerce-to-list))
+            ("checkpoint-times" (mrfd :checkpoint-times
+                                      "~{[~a]: ~,1f~^, ~}" name #'coerce-to-list))
+            (otherwise (error "Unknown field: ~a" id))))))))
 
 (defun get-report-field (field result-entry summary-entry)
   "Gets a report field from entries"
@@ -163,15 +181,65 @@ passing to the formatting code"))
                        summary-entry
                        (%ih result-entry (location field))))))
 
-(defun parse-report-into-table (data &optional (fields '("summary")) solvers)
+(defclass report-style ()
+  ((name :reader style-name
+         :initarg :name
+         :type string
+         :documentation "The name of the report style")
+   (options :reader style-options
+            :initarg :options
+            :type list ; alist
+            :documentation "Alist of style options"))
+  (:documentation "A report style"))
+
+(defclass report-style-provider () ()
+  (:documentation "An extendable provider for report styles"))
+
+(defgeneric provide-report-style (provider name options)
+  (:documentation "Provides a report style. Implementors can return either:
+* NULL, to signify that the provider doesn't support the style
+* a symbol naming a REPORT-STYLE subclass, which will be instantiated
+* an instance of REPORT-STYLE or subclass, which will be used as-is.")
+  (:method-combination or)
+  (:method :around (provider name options)
+    "Transforms the output of the primary method into an actual style instance"
+    (let ((style (call-next-method)))
+      (cond
+        ((null style) (error "No applicable style for name: ~a" name))
+        ((symbolp style) (make-instance style :name name :options options))
+        ((typep style 'report-style) style)
+        (t (error "Invalid report style response: ~a" style)))))
+  (:method or (provider name options)
+    "Default method that requests the default style object"
+    (declare (ignore provider name options))
+    'report-style))
+
+(defun make-report-style (style-string)
+  "Parses and creates a style object from STYLE-STRING"
+  (multiple-value-bind (name options)
+      (u:parse-option-string style-string)
+    (provide-report-style (make-instance 'report-style-provider) name options)))
+
+(defgeneric report-style-required-fields (style)
+  (:documentation "Returns a list of fields required by STYLE")
+  (:method (style) nil))
+
+(defun parse-report-into-table (data &optional (fields '("summary")) solvers styles)
   "Parses suite data in DATA (as a hash table) into a report object, with the specified
 list of FIELDS. If FIELDS is NIL, only includes the summary field"
   (declare (ignore solvers))
   (let ((name (%ih data "suite" "name"))
         (fields (map 'vector #'get-report-field-descriptor fields))
         (solvers (%ih data "solvers"))
-        (table (make-array (length (%ih data "problems")))))
-    (loop for d-row across (%ih data "result-matrix")
+        (table (make-array (length (%ih data "problems"))))
+        (styles (map 'list #'make-report-style styles)))
+    (loop with style-fields = (coerce
+                               (remove-duplicates
+                                (reduce #'append
+                                        (map 'list #'report-style-required-fields
+                                             styles)))
+                               'vector)
+          for d-row across (%ih data "result-matrix")
           for s-row across (%ih data "summary-matrix")
           for benchmark across (%ih data "problems")
           for row = (make-array (length (%ih data "solvers")))
@@ -181,6 +249,7 @@ list of FIELDS. If FIELDS is NIL, only includes the summary field"
                    for d-entry across d-row
                    for s-entry across s-row
                    for entry = (make-array (length fields))
+                   for style-entry = (make-array (length style-fields))
                    for entry-ix from 0
                    doing
                       (loop for field across fields
@@ -188,10 +257,17 @@ list of FIELDS. If FIELDS is NIL, only includes the summary field"
                             doing
                                (setf (aref entry ix)
                                      (get-report-field field d-entry s-entry)))
+                      (loop for field across style-fields
+                            for ix from 0
+                            doing
+                               (setf (aref style-entry ix)
+                                     (get-report-field field d-entry s-entry)))
                    do (setf (aref row entry-ix)
                             (make-instance 'report-entry
                                            :field-descriptors fields
                                            :field-values entry
+                                           :style-field-descriptors style-fields
+                                           :style-field-values style-entry
                                            :solver solver)))
           do (setf (aref table row-ix)
                    (make-instance 'report-row
@@ -202,7 +278,8 @@ list of FIELDS. If FIELDS is NIL, only includes the summary field"
                    :title name
                    :solvers solvers
                    :fields fields
-                   :rows table)))
+                   :rows table
+                   :styles styles)))
 
 ;;;
 ;;; Implementations
@@ -223,13 +300,14 @@ list of FIELDS. If FIELDS is NIL, only includes the summary field"
           finally (return curr-table))))
 
 
-(defun invoke-report (reporter json-files output-file fields solvers)
+(defun invoke-report (reporter json-files output-file fields solvers styles)
   "Processes result files into a combined report"
   (map-into json-files #'u:rationalize-namestring json-files)
   (let ((data (loop for file in json-files
                     collect (parse-report-into-table (jzon:parse file)
                                                      fields
-                                                     solvers)))
+                                                     solvers
+                                                     styles)))
         (reporter (make-instance reporter)))
     (if (null output-file)
         (write-report reporter *standard-output* data)
@@ -306,14 +384,24 @@ on TABLE with REPORTER to STREAM."))
 ;;;
 ;;; The HTML reporter
 ;;;
-
 (defclass html-reporter ()
   ()
   (:documentation "A reporter that writes HTML"))
 
+(defgeneric report-table-row-classes (reporter row table)
+  (:documentation "Gets CSS classes to set on the report row")
+  (:method-combination append)
+  (:method append (reporter row table) nil))
+
 (defmethod write-report-header ((reporter html-reporter) ss)
+  (declare (ignore reporter ss)))
+
+(defmethod write-report-header :around ((reporter html-reporter) ss)
   "Writes a report header"
   (fmt-tab ss 0 "<!DOCTYPE html>~%<html>~%")
+  (fmt-tab ss 1 "<head>~%")
+  (call-next-method)
+  (fmt-tab ss 1 "</head>~%")
   (fmt-tab ss 1 "<body>~%")
   (fmt-tab ss 2 "<h1>Benchmark Results</h1>~%"))
 
@@ -345,13 +433,13 @@ on TABLE with REPORTER to STREAM."))
   (loop with field-count = (length (field-descriptors table))
         for solver across (solvers table)
         do (format ss "<th colspan=~a>~a</th>" field-count solver))
-  (format ss "<tr>~%")
+  (format ss "</tr>~%")
   (fmt-tab ss 5 "<tr><th>Benchmarks</th>")
   (loop for solver across (solvers table)
         do (loop for field across (field-descriptors table)
                  do (format ss "<th>~a</th>" (name field))))
   (format ss "</tr>~%")
-  (fmt-tab ss 4 "<thead>~%"))
+  (fmt-tab ss 4 "</thead>~%"))
 
 (defmethod write-report-table-body :around ((reporter html-reporter) ss table)
   (fmt-tab ss 4 "<tbody>~%")
@@ -359,7 +447,8 @@ on TABLE with REPORTER to STREAM."))
   (fmt-tab ss 4 "</tbody>~%"))
 
 (defmethod write-report-table-row :around ((reporter html-reporter) ss row table)
-  (fmt-tab ss 5 "<tr>")
+  (fmt-tab ss 5 "<tr~@[ class='~{~a~^ ~}'~]>"
+           (report-table-row-classes reporter row table))
   (call-next-method)
   (format ss "</tr>~%"))
 

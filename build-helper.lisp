@@ -7,7 +7,7 @@
   "Builds the core image"
   (when disable-smt (push :synthkit-disable-smt-solver *features*))
   (ql:quickload "com.kjcjohnson.tdp/test")
-  (proclaim `(optimize 
+  (proclaim `(optimize
               ,@(case optimize
                  (:speed '((speed 3) (debug 0)))
                  (:debug '((speed 1) (debug 3)))
@@ -22,4 +22,4 @@
   (when public-release (push :ks2-public-release *features*))
   (ql:quickload "com.kjcjohnson.ks2.runner")
   (ql:quickload "com.kjcjohnson.ks2/app")
-  (asdf:oos 'asdf:program-op "com.kjcjohnson.ks2/app"))
+  (asdf:oos 'asdf:program-op "com.kjcjohnson.ks2/app-all"))

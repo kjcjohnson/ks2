@@ -34,13 +34,15 @@
   :pathname "src/utilities"
   :serial t
   :components ((:file "package")
+               (:file "option-strings")
                (:file "path-utilities")
                (:file "pathname-utilities")))
 
 (asdf:defsystem "com.kjcjohnson.ks2/solver-api"
   :pathname "src/solver-api"
   :components ((:file "package")
-               (:file "solver-api" :depends-on ("package"))))
+               (:file "solver-api" :depends-on ("package"))
+               (:file "solvers" :depends-on ("package" "solver-api"))))
 
 
 (asdf:defsystem "com.kjcjohnson.ks2/app"
@@ -65,3 +67,10 @@
                              (:file "report")
                              (:file "main")
                              (:file "hooks")))))
+
+(asdf:defsystem "com.kjcjohnson.ks2/app-all"
+  :depends-on ("com.kjcjohnson.ks2/app"
+               "com.kjcjohnson.ks2.plugins")
+  :build-operation "program-op"
+  :build-pathname "bin/ks2"
+  :entry-point "COM.KJCJOHNSON.KS2.CLI:MAIN")
