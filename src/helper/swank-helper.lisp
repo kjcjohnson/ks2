@@ -80,6 +80,8 @@
   (setf ast:*prune-success-counter* 0)
   (ast:clear-all-checkpoints)
   (trivial-garbage:gc :full t)
+  (when (uiop:getenv "KS2_SMT_DEBUG")
+    (setf cl-smt-lib:*smt-debug* t))
   t)
 
 (defvar *problem-file* nil "The current loaded problem file")
