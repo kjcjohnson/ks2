@@ -34,7 +34,8 @@
 
 (defgeneric solver-options (solver-designator)
   (:documentation "Gets the list of options taken by SOLVER-DESIGNATOR. Returns a list
-of SOLVER-OPTION structures."))
+of SOLVER-OPTION structures.")
+  (:method-combination append))
 
 (defstruct solver-option
   "A solver option with the following parameters:
@@ -56,7 +57,7 @@ of SOLVER-OPTION structures."))
        ,(if (listp symbol) `(list ,@symbol) `(list ,symbol)))
      (defmethod solver-description ((solver (eql ,designator))) ,description)
      (defmethod solver-action ((solver (eql ,designator))) ,action)
-     (defmethod solver-options ((solver (eql ,designator))) ,options)
+     (defmethod solver-options append ((solver (eql ,designator))) ,options)
      ,@(when spec-transformer
          (list
           `(defmethod transform-specification ((solver (eql ,designator)) spec ctx)

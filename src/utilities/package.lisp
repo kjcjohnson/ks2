@@ -8,4 +8,5 @@
            #:core-location
            #:locate-file
            #:locate-exe
-           #:rationalize-namestring))
+           #:rationalize-namestring
+           #:parse-option-string))

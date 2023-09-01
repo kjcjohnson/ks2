@@ -89,21 +89,33 @@
            (handler-case
                (parse-number:parse-number value)
              (parse-number:invalid-number ()
-               (error "Invalid Number solver option: ~a" value)))))
-  
+               (error "Invalid Number solver option: ~a" value))))
+         (self-or-first (x)
+           (if (atom x) x (first x)))
+         (parse-member-option (value type)
+           (loop for opt in (rest type)
+                 when (string-equal (string opt) (string value)) do
+                   (return opt)
+                 end
+                 finally (error "Invalid Member solver option: ~a (not in ~a)"
+                                value (rest type)))))
+
     (let ((available-options
             (runner::solver-options child-lisp (solver solver-config)))
           (opt-plist nil))
-    (loop for (key . value) in (options solver-config)
-          for opt = (find key available-options
-                          :key (a:compose #'symbol-name #'s-api::solver-option-keyword)
-                          :test #'string-equal)
-          unless opt
-            do (error "Invalid solver option: ~a" key)
-          end
-          do (push (s-api::solver-option-keyword opt) opt-plist)
-             (push (ecase (s-api::solver-option-type opt)
-                     (:boolean (parse-boolean-option value))
-                     (:number (parse-number-option value)))
-                   opt-plist))
+      (loop for (key . value) in (options solver-config)
+            for opt = (find key available-options
+                            :key (a:compose #'symbol-name
+                                            #'s-api::solver-option-keyword)
+                            :test #'string-equal)
+            for type = (s-api::solver-option-type opt)
+            unless opt
+              do (error "Invalid solver option: ~a" key)
+            end
+            do (push (s-api::solver-option-keyword opt) opt-plist)
+               (push (ecase (self-or-first type)
+                       (:boolean (parse-boolean-option value))
+                       (:number (parse-number-option value))
+                       (:member (parse-member-option value type)))
+                     opt-plist))
       (setf (option-plist solver-config) (nreverse opt-plist)))))
