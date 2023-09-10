@@ -98,7 +98,7 @@
 
 (defparameter *default-solvers* (list "bottom-up-enum"
                                       "top-down-enum"
-                                      "frangel"
+                                      "fragment-search"
                                       "duet"))
 
 (defun benchmark/handler (cmd)
