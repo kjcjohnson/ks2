@@ -96,9 +96,15 @@
    (%option/timeout)
    (%option/core)))
 
+(defparameter *default-solvers* (list "bottom-up-enum"
+                                      "top-down-enum"
+                                      "frangel"
+                                      "duet"))
+
 (defun benchmark/handler (cmd)
   "Handler for benchmarking solvers"
-  (let ((solvers (map 'list #'sv:normalize-solver (clingon:getopt cmd :solvers)))
+  (let ((solvers (map 'list #'sv:normalize-solver
+                      (clingon:getopt cmd :solvers *default-solvers*)))
         (output-format (clingon:getopt cmd :output-format))
         (output-path (clingon:getopt cmd :output-path))
         (suite-dir (clingon:command-arguments cmd))

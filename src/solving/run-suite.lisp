@@ -6,7 +6,7 @@
 (defun run-suite (suite solver &key timeout)
   "Runs a suite."
   (declare (type suite suite))
-  (let ((solvers (cond ((null solver) runner::*solvers*)
+  (let ((solvers (cond ((null solver) (error "No solvers specified"))
                        ((atom solver) (list solver))
                        (t solver))))
     (let ((results (make-suite-results suite (map 'list #'name solvers))))
@@ -18,4 +18,3 @@
             (setf (suite-result results (name solver) problem)
                   result))))
       results)))
-    
