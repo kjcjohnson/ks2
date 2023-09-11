@@ -8,13 +8,22 @@
 ;;;
 (defvar *registered-solvers* nil)
 
-(defun register-solver (solver-designator)
+(defun register-solver (solver-designator &optional classname)
   "Registers a solver indicated by SOLVER-DESIGNATOR with the system."
-  (pushnew solver-designator *registered-solvers*))
+  (pushnew (cons solver-designator classname) *registered-solvers* :test #'equal))
 
 (defun list-solvers ()
   "Lists all solvers registered with the system. Returns a list of solver designators."
-  *registered-solvers*)
+  (map 'list #'first *registered-solvers*))
+
+(defun resolve-solver (solver-designator)
+  "Resolves SOLVER-DESIGNATOR into an instance, if available"
+  (let ((cell (assoc solver-designator *registered-solvers*)))
+    (unless (null cell)
+      (let ((cdr (cdr cell)))
+        (if (null cdr)
+            (car cell)
+            (make-instance cdr))))))
 
 ;;;
 ;;; Solver metadata
@@ -48,20 +57,23 @@ of SOLVER-OPTION structures.")
   keyword name description type default)
 
 ;; Convenience macro
-(defmacro define-solver-metadata (designator
+(defmacro define-solver-metadata (class-or-keyword
                                   &key name symbol action description
                                     options spec-transformer)
-  `(progn
-     (defmethod solver-name ((solver (eql ,designator))) ,name)
-     (defmethod solver-symbols ((solver (eql ,designator)))
-       ,(if (listp symbol) `(list ,@symbol) `(list ,symbol)))
-     (defmethod solver-description ((solver (eql ,designator))) ,description)
-     (defmethod solver-action ((solver (eql ,designator))) ,action)
-     (defmethod solver-options append ((solver (eql ,designator))) ,options)
-     ,@(when spec-transformer
-         (list
-          `(defmethod transform-specification ((solver (eql ,designator)) spec ctx)
-             (funcall ,spec-transformer spec ctx))))))
+  (let ((specializer (if (keywordp class-or-keyword)
+                         `(eql ,class-or-keyword)
+                         `,class-or-keyword)))
+    `(progn
+       (defmethod solver-name ((solver ,specializer)) ,name)
+       (defmethod solver-symbols ((solver ,specializer))
+         ,(if (listp symbol) `(list ,@symbol) `(list ,symbol)))
+       (defmethod solver-description ((solver ,specializer)) ,description)
+       (defmethod solver-action ((solver ,specializer)) ,action)
+       (defmethod solver-options append ((solver ,specializer)) ,options)
+       ,@(when spec-transformer
+           (list
+            `(defmethod transform-specification ((solver ,specializer) spec ctx)
+               (funcall ,spec-transformer spec ctx)))))))
 
 ;;;
 ;;; Solving API

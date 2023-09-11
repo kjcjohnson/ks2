@@ -5,7 +5,8 @@
   (:use #:cl)
   ;; Registration API
   (:export #:register-solver
-           #:list-solvers)
+           #:list-solvers
+           #:resolve-solver)
   ;; Metadata API
   (:export #:solver-name
            #:solver-symbols
@@ -19,4 +20,6 @@
   (:export #:transform-specification
            #:smt-solver-configuration
            #:initialize-solver
-           #:solve-problem))
+           #:solve-problem)
+  ;; Solvers
+  (:export #:solver))

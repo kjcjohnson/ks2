@@ -103,19 +103,19 @@
   (solver-api:list-solvers))
 
 (defslimefun solver-name (solver-designator)
-  (solver-api:solver-name solver-designator))
+  (solver-api:solver-name (solver-api:resolve-solver solver-designator)))
 
 (defslimefun solver-symbols (solver-designator)
-  (solver-api:solver-symbols solver-designator))
+  (solver-api:solver-symbols (solver-api:resolve-solver solver-designator)))
 
 (defslimefun solver-description (solver-designator)
-  (solver-api:solver-description solver-designator))
+  (solver-api:solver-description (solver-api:resolve-solver solver-designator)))
 
 (defslimefun solver-action (solver-designator)
-  (solver-api:solver-action solver-designator))
+  (solver-api:solver-action (solver-api:resolve-solver solver-designator)))
 
 (defslimefun solver-options (solver-designator)
-  (solver-api:solver-options solver-designator))
+  (solver-api:solver-options (solver-api:resolve-solver solver-designator)))
 
 (defun actually-print-program-node (pn)
   "Prints a decent representation of a program node PN."
@@ -125,11 +125,11 @@
           (ast::print-program-node pn string-stream)))
       (format nil "~s" pn)))
 
-(defun transform-problem (solver-designator problem)
-  "Transforms PROBLEM into a format usable by SOLVER-DESIGNATOR."
+(defun transform-problem (solver problem)
+  "Transforms PROBLEM into a format usable by SOLVER."
   (semgus:replace-specification
    problem
-   (solver-api:transform-specification solver-designator
+   (solver-api:transform-specification solver
                                        (semgus:specification problem)
                                        (semgus:context problem))))
 
@@ -150,11 +150,11 @@
                                                :optional-suffix "exe")
                        :arguments (smt:arguments config)))))
 
-(defun do-solve-problem (solver-designator problem options)
+(defun do-solve-problem (solver problem options)
   "Solves a problem."
-  (let ((solver-spec (solver-api:smt-solver-configuration solver-designator)))
+  (let ((solver-spec (solver-api:smt-solver-configuration solver)))
     (smt:with-lazy-solver (solver-spec)
-      (apply #'solver-api:solve-problem solver-designator problem options))))
+      (apply #'solver-api:solve-problem solver problem options))))
 
 (defun %get-spec-types (problem)
   "Gets the specification types used in PROBLEM"
@@ -185,13 +185,14 @@
 
 (defslimefun solve-problem
     (solver-designator problem-file &rest options &key &allow-other-keys)
-  (apply #'solver-api:initialize-solver solver-designator options)
-  (let* ((problem (maybe-load-problem-file problem-file))
-         (new-p (transform-problem solver-designator problem)))
+  (let ((solver (solver-api:resolve-solver solver-designator)))
+    (apply #'solver-api:initialize-solver solver options)
+    (let* ((problem (maybe-load-problem-file problem-file))
+           (new-p (transform-problem solver problem)))
 
-    (if (null (semgus:specification new-p))
-        (list :program :unsupported :spec-types (%get-spec-types problem))
-        (let* ((start-time (get-internal-real-time))
-               (results (do-solve-problem solver-designator new-p options))
-               (end-time (get-internal-real-time)))
-          (create-result results (- end-time start-time) new-p)))))
+      (if (null (semgus:specification new-p))
+          (list :program :unsupported :spec-types (%get-spec-types problem))
+          (let* ((start-time (get-internal-real-time))
+                 (results (do-solve-problem solver new-p options))
+                 (end-time (get-internal-real-time)))
+            (create-result results (- end-time start-time) new-p))))))
