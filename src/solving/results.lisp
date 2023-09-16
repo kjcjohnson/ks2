@@ -3,16 +3,21 @@
 ;;;;
 (in-package #:com.kjcjohnson.ks2.solving)
 
+(deftype result-status ()
+  "A status of a result"
+  '(member
+    :solved       ; The problem was successfully solved
+    :timeout      ; The problem timed out
+    :crash        ; The solver core crashed (usu. memory)
+    :unsupported  ; The problem is not supported by the solver
+    :unrealizable ; The problem is unrealizable by the solver
+    :error        ; The solver encountered an error
+    :unknown))
+
 (defclass problem-result ()
   ((status :reader status
            :initarg :status
-           :type (member :solved       ; The problem was successfully solved
-                         :timeout      ; The problem timed out
-                         :crash        ; The solver core crashed (usu. memory)
-                         :unsupported  ; The problem is not supported by the solver
-                         :unrealizable ; The problem is unrealizable by the solver
-                         :error        ; The solver encountered an error
-                         :unknown)
+           :type result-status
            :documentation "Status of the problem solution")
    (name :reader name
          :initarg :name
@@ -217,7 +222,7 @@ sequences of string designators."
            (type suite suite))
   (let ((solver-dim (length solvers))
         (problem-dim (length (problems suite))))
-    
+
     (make-instance 'suite-results
                    :suite suite
                    :solvers (map '(vector string) #'string solvers)

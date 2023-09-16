@@ -19,6 +19,4 @@
 
   ;; Results
   (:export #:suite #:solvers #:problems #:suite-result #:suite-results
-           #:print-result))
-
-
+           #:print-result #:status))

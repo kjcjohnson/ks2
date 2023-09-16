@@ -51,7 +51,11 @@
     (when (zerop (length problems))
       (format *error-output* "~&error: no problems to solve specified~%")
       (clingon:exit 1))
-    (invoke-solve (sv:normalize-solver solver) problems :timeout timeout)))
+    (let* ((statuses (invoke-solve (sv:normalize-solver solver)
+                                   problems
+                                   :timeout timeout))
+           (first-nz (find 0 statuses :test-not #'=)))
+      (when first-nz (clingon:exit first-nz)))))
 
 (defun solve/command ()
   "Command for solving individual SemGuS problems"
@@ -230,5 +234,6 @@
 
 (defun main ()
   "Main entrypoint to the ks2 runner"
-  (let ((app (ks2/command)))
+  (let ((app (ks2/command))
+        (*features* (remove :swank *features*))) ; So CLINGON:EXIT works
     (clingon:run app)))
