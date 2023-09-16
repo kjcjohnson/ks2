@@ -30,9 +30,24 @@ done
 root_dir="$(dirname "$this")"
 test_dir="${root_dir}/t/smoke-tests"
 exe="${root_dir}/bin/ks2"
+failure=
 
 for test in "$test_dir"/*.sem; do
     echo " --> $test"
     $exe solve -s tde "$test"
-    echo " +++ $test" 
+    if [ $? -ne 0 ]; then
+        echo " --- FAIL: $test"
+        failure=true
+    else
+        echo " +++ $test"
+    fi
 done
+
+if [ -z $failure ]; then
+    echo " "
+    echo "Smoke tests passed."
+else
+    echo " "
+    echo "Some tests failed."
+    exit 1
+fi
