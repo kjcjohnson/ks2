@@ -208,8 +208,7 @@
 
 (defun ks2/handler (cmd)
   "Handler for the main ks2 command"
-  (declare (ignore cmd))
-  (format t "Hello, world!~%"))
+  (clingon:print-usage cmd *standard-output*))
 
 (defun ks2/sub-commands ()
   "Subcommands for ks2"
