@@ -39,6 +39,10 @@
             :initarg :program
             :type (or string null)
             :documentation "The found program, or NIL if no program produced")
+   (program-as-smt :reader program-as-smt
+                   :initarg :program-as-smt
+                   :type (or string null)
+                   :documentation "The found program as an SMT definition string")
    (verify-rate :reader verify-rate
                 :initarg :verify-rate
                 :type number
@@ -83,7 +87,7 @@
 
 (defun make-problem-result
     (name solver solved?
-     run-time peak-memory program verify-rate specification-types
+     run-time peak-memory program program-as-smt verify-rate specification-types
      concrete-candidate-counter partial-candidate-counter
      concrete-candidates-by-size checkpoint-times
      prune-candidate-counter prune-attempt-counter prune-success-counter
@@ -95,6 +99,7 @@
                  :run-time run-time
                  :peak-memory peak-memory
                  :program program
+                 :program-as-smt program-as-smt
                  :verify-rate verify-rate
                  :specification-types specification-types
                  :status (cond
@@ -163,15 +168,20 @@
              (run-time result)
              (peak-memory result)
              (verify-rate result)
-             (specification-types result)))
+             (specification-types result))
+     (format t "~&~a~%" (program-as-smt result)))
     (:timeout
      (format t
              "~&; TIMEOUT after ~,2fs~%;   MAX MEM OFFSET: ~,3fMiB~%;   PPS: ~,2fprog/s~%~%"
              (run-time result)
              (peak-memory result)
-             (verify-rate result)))
+             (verify-rate result))
+     (format t "~&timeout~%"))
+    (:unrealizable
+     (format t "~&infeasible~%"))
     (t
-     (format t "~&~a~%~%" (status result)))))
+     (format t "~&; ~a~%~%" (status result))
+     (format t "~&error~%"))))
 
 (defparameter *symbol-timeout* "⌛")
 (defparameter *symbol-error* "💥")

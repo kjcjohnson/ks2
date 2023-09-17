@@ -163,6 +163,31 @@
             (semgus:specification problem)
             (spec:leaf-specification-types (semgus:specification problem)))))
 
+(defun get-smt-results (results problem)
+  "Creates an SMT string of RESULTS for PROBLEM"
+  (with-output-to-string (s)
+    (format s "(~%")
+    ;; This is a little scuff, because we don't have mappings between synthfuns
+    ;; and the associated results. So we just assume they're all the same _shrug_
+    (flet ((print-result (r)
+             (format s "  (define-fun ~a () ~a "
+                     (smt:identifier-string
+                      (semgus:term-name (semgus:context problem)))
+                     (let ((sort (smt:identifier-string
+                                  (smt:name (semgus:term-type
+                                             (semgus:context problem))))))
+                       (if (listp sort) ; Ugh.
+                           (if (= 1 (length sort))
+                               (first sort)
+                               (format nil "(_ ~{~a~^ ~})" sort))
+                           sort)))
+             (ast:print-program-node-as-smt r s)
+             (format s ")~%")))
+      (if (atom results)
+          (print-result results)
+          (map nil #'print-result results)))
+    (format s ")")))
+
 (defun create-result (results delta-internal-time problem)
   "Creates a results object to pass back"
   ;; TODO: create and serialize results into a proxy object
@@ -175,6 +200,7 @@
                        (map 'list #'actually-print-program-node results)))
               (t
                (actually-print-program-node results)))
+   :program-as-smt (get-smt-results results problem)
    :time (/ delta-internal-time internal-time-units-per-second)
    :spec-types (%get-spec-types problem)
    :checkpoint-times ast:*checkpoint-times*

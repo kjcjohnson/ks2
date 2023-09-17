@@ -60,7 +60,7 @@ report on some statistics when a solving run crashes.")
                    doing (sleep 1)
                    doing (format *trace-output* ".")
                    doing (force-output *trace-output*))
-             
+
              (let* ((solved? (lparallel:fulfilledp result-promise))
                     (time (runner::internal-time-to-seconds (- (get-internal-real-time)
                                                        start-time)))
@@ -77,6 +77,7 @@ report on some statistics when a solving run crashes.")
                     (checkpoint-times (or (getf result :checkpoint-times)
                                           (runner:get-checkpoint-times child-lisp)))
                     (program (getf result :program))
+                    (program-as-smt (getf result :program-as-smt))
                     (real-time (getf result :time))
                     (spec-types (getf result :spec-types))
                     (prune-candidates (getf result :prune-candidate-counter))
@@ -97,6 +98,7 @@ report on some statistics when a solving run crashes.")
                                     (if (and (listp program) (= 1 (length program)))
                                         (first program)
                                         program)
+                                    program-as-smt
                                     exec-rate
                                     spec-types
                                     concrete-count
