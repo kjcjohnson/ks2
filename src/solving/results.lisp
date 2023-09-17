@@ -116,13 +116,19 @@
                  :prune-success-counter prune-success-counter
                  :prune-success-rate prune-success-rate))
 
+(defun %compute-live-run-time (live)
+  "Computes run-time from live data LIVE"
+  (let ((start-time (getf live :start-time)))
+    (unless (null start-time)
+      (/ (- (get-internal-real-time) start-time)
+         internal-time-units-per-second))))
+
 (defun make-problem-result-for-crash (name solver &key live)
   "Makes a problem result for a crashed solver run"
   (make-instance 'problem-result
                  :name (string name)
                  :solver (string solver)
-                 :run-time (runner::internal-time-to-seconds
-                            (- (get-internal-real-time) (getf live :start-time)))
+                 :run-time (%compute-live-run-time live)
                  :peak-memory (getf live :max-memory)
                  :concrete-candidate-counter (getf live :concrete-candidate-counter)
                  :partial-candidate-counter (getf live :partial-candidate-counter)
@@ -135,8 +141,7 @@
   (make-instance 'problem-result
                  :name (string name)
                  :solver (string solver)
-                 :run-time (runner::internal-time-to-seconds
-                            (- (get-internal-real-time) (getf live :start-time)))
+                 :run-time (%compute-live-run-time live)
                  :peak-memory (getf live :max-memory)
                  :concrete-candidate-counter (getf live :concrete-candidate-counter)
                  :partial-candidate-counter (getf live :partial-candidate-counter)
@@ -149,8 +154,7 @@
   (make-instance 'problem-result
                  :name (string name)
                  :solver (string solver)
-                 :run-time (runner::internal-time-to-seconds
-                            (- (get-internal-real-time) (getf live :start-time)))
+                 :run-time (%compute-live-run-time live)
                  :peak-memory (getf live :max-memory)
                  :concrete-candidate-counter (getf live :concrete-candidate-counter)
                  :partial-candidate-counter (getf live :partial-candidate-counter)
