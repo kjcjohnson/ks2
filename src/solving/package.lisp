@@ -19,4 +19,7 @@
 
   ;; Results
   (:export #:suite #:solvers #:problems #:suite-result #:suite-results
-           #:print-result #:status))
+           #:print-result #:status)
+
+  ;; Misc
+  (:export #:*core-output-stream* #:*quiet*))

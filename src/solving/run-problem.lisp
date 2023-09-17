@@ -3,6 +3,11 @@
 ;;;;
 (in-package #:com.kjcjohnson.ks2.solving)
 
+(defvar *core-output-stream* (make-synonym-stream '*standard-output*)
+  "Stream to write core output to")
+
+(defvar *quiet* nil "Set to T when quiet mode is enabled")
+
 (defvar *live-data-stash* nil "A place for live data to be stashed, so that we can
 report on some statistics when a solving run crashes.")
 
@@ -36,7 +41,7 @@ report on some statistics when a solving run crashes.")
   (let (child-lisp)
     (unwind-protect
          (progn
-           (setf child-lisp (runner::swank-spawn))
+           (setf child-lisp (runner::swank-spawn :output *core-output-stream*))
            (runner::bootstrap-tdp child-lisp)
            (validate-solver-options child-lisp solver)
            (runner::force-gc child-lisp)
@@ -57,9 +62,7 @@ report on some statistics when a solving run crashes.")
                              (setf max-memory dm)))
                    doing (populate-live-data child-lisp)
                    while (< (get-internal-real-time) kill-time)
-                   doing (sleep 1)
-                   doing (format *trace-output* ".")
-                   doing (force-output *trace-output*))
+                   doing (sleep 1))
 
              (let* ((solved? (lparallel:fulfilledp result-promise))
                     (time (runner::internal-time-to-seconds (- (get-internal-real-time)

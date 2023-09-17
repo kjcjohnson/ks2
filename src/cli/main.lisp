@@ -4,6 +4,30 @@
 (in-package #:com.kjcjohnson.ks2.cli)
 
 ;;;
+;;; Logging
+;;;
+(defun configure-logging (cmd)
+  "Configures logging for the command CMD"
+  (let ((debug nil)
+        (quiet nil))
+    ;; The debug flag might be set at any command level,
+    ;;  while CMD is specifically the top level. So traverse and see.
+    (clingon:with-command-tree (node cmd)
+      (when (and (clingon:opt-is-set-p node :debug)
+                 (clingon:getopt node :debug))
+        (setf debug t))
+      (when (and (clingon:opt-is-set-p node :quiet)
+                 (clingon:getopt node :quiet))
+        (setf quiet t)))
+    (v:define-pipe ()
+      (v:level-filter :level (if debug :debug :info))
+      (v:stream-faucet :output *error-output*))
+
+    (when quiet
+      (setf sv:*quiet* t)
+      (setf sv:*core-output-stream* (make-broadcast-stream)))))
+
+;;;
 ;;; Common options
 ;;;
 (defun %option/core ()
@@ -205,10 +229,18 @@
   (list
    (clingon:make-option
     :flag
+    :persistent t
     :description "enables extra debugging information"
     :long-name "debug"
     :key :debug
-    :env-vars '("KS2_DEBUG"))))
+    :env-vars '("KS2_DEBUG"))
+   (clingon:make-option
+    :flag
+    :persistent t
+    :description "disables printing unnecessary information"
+    :long-name "quiet"
+    :short-name #\q
+    :key :quiet)))
 
 (defun ks2/handler (cmd)
   "Handler for the main ks2 command"
@@ -230,7 +262,8 @@
    :license "MIT"
    :options (ks2/options)
    :sub-commands (ks2/sub-commands)
-   :handler #'ks2/handler))
+   :handler #'ks2/handler
+   :pre-hook #'configure-logging))
 
 (defun main ()
   "Main entrypoint to the ks2 runner"

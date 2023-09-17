@@ -9,6 +9,7 @@
                "bordeaux-threads"
                "lparallel"
                "unix-opts"
+               "verbose"
                "with-user-abort"
                "str")
   :build-operation "program-op"

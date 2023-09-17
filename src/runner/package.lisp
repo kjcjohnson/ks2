@@ -29,7 +29,8 @@
 (defpackage #:com.kjcjohnson.ks2.runner
   (:use #:cl)
   (:local-nicknames (#:helper #:com.kjcjohnson.ks2.runner.helper)
-                    (#:ks2 #:com.kjcjohnson.ks2))
+                    (#:ks2 #:com.kjcjohnson.ks2)
+                    (#:v #:org.shirakumo.verbose))
   (:export #:init-and-start-swank #:main #:main2)
   (:export #:get-execution-counter
            #:get-checkpoint-times

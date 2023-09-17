@@ -5,8 +5,9 @@
 
 (defun spawn-inferior-lisp (port-file &key image (output :interactive))
   "Spawns an inferior lisp. Currently, just SBCL."
-  (debug-msg "===== SPAWNING CORE =====~% - PORT-FILE: ~a~% - IMAGE: ~a~%"
-             port-file image)
+  (v:debug :core "===== SPAWNING CORE =====")
+  (v:debug :core " - PORT-FILE: ~a" port-file)
+  (v:debug :core " - IMAGE: ~a" image)
   (uiop:launch-program (list (if (null image)
                                  "sbcl"
                                  image)
@@ -60,13 +61,12 @@
          (let ((il-conn (spawn-inferior-lisp portfile
                                              :image (find-inferior-image)
                                              :output output)))
-           (debug-msg "===== WAITING FOR SWANK =====")
+           (v:debug :core "===== WAITING FOR SWANK =====")
            (when status-callback
              (funcall status-callback "Waiting for SWANK connection..."))
            (loop
              for i from 0 to 30
-             doing (format t ".")
-             doing (force-output)
+             doing (v:trace :core "Waiting for core startup... (~a/30)" i)
              doing (sleep 1)
              doing (when (eql :stream output)
                      (%maybe-process-characters
@@ -76,8 +76,7 @@
                      (%maybe-process-characters
                       (uiop:process-info-error-output il-conn)
                       error-callback))
-             until (uiop:file-exists-p portfile)
-             finally (terpri))
+             until (uiop:file-exists-p portfile))
 
            (let* ((port (with-open-file (pfs portfile :direction :input)
                           (read pfs)))
@@ -91,7 +90,7 @@
                                          :port port
                                          :swank-connection swank-conn)))
                (init-swank-response-loop spawn)
-               (debug-msg "===== CORE SPAWNED =====")
+               (v:debug :core "===== CORE SPAWNED =====")
                spawn)))
       (when (uiop:file-exists-p portfile)
         (delete-file portfile)))))

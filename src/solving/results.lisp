@@ -162,25 +162,28 @@
   "Prints the result for terminal viewing"
   (case (status result)
     (:solved
-     (format t
-             "~&; RESULT: ~a~%;   TIME: ~,2fs~%;   MAX MEM OFFSET: ~,3fMiB~%;   PPS: ~,2fprog/s~%;   SPEC: ~{~a~^, ~}~%~%"
-             (program result)
-             (run-time result)
-             (peak-memory result)
-             (verify-rate result)
-             (specification-types result))
+     (unless *quiet*
+       (format t
+               "~&; RESULT: ~a~%;   TIME: ~,2fs~%;   MAX MEM OFFSET: ~,3fMiB~%;   PPS: ~,2fprog/s~%;   SPEC: ~{~a~^, ~}~%~%"
+               (program result)
+               (run-time result)
+               (peak-memory result)
+               (verify-rate result)
+               (specification-types result)))
      (format t "~&~a~%" (program-as-smt result)))
     (:timeout
-     (format t
-             "~&; TIMEOUT after ~,2fs~%;   MAX MEM OFFSET: ~,3fMiB~%;   PPS: ~,2fprog/s~%~%"
-             (run-time result)
-             (peak-memory result)
-             (verify-rate result))
+     (unless *quiet*
+       (format t
+               "~&; TIMEOUT after ~,2fs~%;   MAX MEM OFFSET: ~,3fMiB~%;   PPS: ~,2fprog/s~%~%"
+               (run-time result)
+               (peak-memory result)
+               (verify-rate result)))
      (format t "~&timeout~%"))
     (:unrealizable
-     (format t "~&infeasible~%"))
+     (format t "~&unrealizable~%"))
     (t
-     (format t "~&; ~a~%~%" (status result))
+     (unless *quiet*
+       (format t "~&; ~a~%~%" (status result)))
      (format t "~&error~%"))))
 
 (defparameter *symbol-timeout* "⌛")
