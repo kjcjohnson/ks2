@@ -19,6 +19,11 @@
       (when (and (clingon:opt-is-set-p node :quiet)
                  (clingon:getopt node :quiet))
         (setf quiet t)))
+
+    ;; define-pipe just adds a new segment, so remove the existing one first
+    (stop-logger)
+    (setf v:*global-controller* (make-instance 'v:controller))
+
     (v:define-pipe ()
       (v:level-filter :level (if debug :debug :info))
       (v:stream-faucet :output *error-output*))

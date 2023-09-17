@@ -120,19 +120,31 @@ report on some statistics when a solving run crashes.")
   (declare (type problem problem))
   (let* ((*live-data-stash* nil)
          (result
-           (handler-case
-               (%run-problem problem solver :timeout timeout)
-             (runner::rpc-error ()
-               (make-problem-result-for-error (name problem)
+           (block do-solve
+             (handler-bind
+                 ((runner::rpc-error
+                    #'(lambda (e)
+                        (declare (ignore e))
+                        (return-from do-solve
+                          (make-problem-result-for-error (name problem)
                                               (name solver)
-                                              :live *live-data-stash*))
-             (runner::swank-crash ()
-               (make-problem-result-for-crash (name problem)
+                                              :live *live-data-stash*))))
+                  (runner::swank-crash
+                    #'(lambda (e)
+                        (declare (ignore e))
+                        (return-from do-solve
+                          (make-problem-result-for-crash (name problem)
                                               (name solver)
-                                              :live *live-data-stash*))
-             (error (e)
-               (format *error-output* "; **OTHER CONDITION: ~a~%" e)
-               (make-problem-result-for-unknown (name problem)
-                                                (name solver)
-                                                :live *live-data-stash*)))))
+                                              :live *live-data-stash*))))
+                  (error
+                    #'(lambda (e)
+                        (v:error :solving
+                                 "Caught unknown condition while running a problem")
+                        (v:error :solving e)
+                        (return-from do-solve
+                          (make-problem-result-for-unknown (name problem)
+                                                           (name solver)
+                                                           :live *live-data-stash*)))))
+
+               (%run-problem problem solver :timeout timeout)))))
     result))
