@@ -8,4 +8,4 @@
                     (#:ks2 #:com.kjcjohnson.ks2)
                     (#:v #:org.shirakumo.verbose)
                     (#:jzon #:com.inuoe.jzon))
-  (:export #:main))
+  (:export #:main #:generate-documentation))

@@ -23,3 +23,10 @@
   (ql:quickload "com.kjcjohnson.ks2.runner")
   (ql:quickload "com.kjcjohnson.ks2/app")
   (asdf:oos 'asdf:program-op "com.kjcjohnson.ks2/app-all"))
+
+(defun build-docs (filename)
+  "Builds the command documentation"
+  (asdf:oos 'asdf:load-op "com.kjcjohnson.ks2/app-all")
+  (funcall (uiop:ensure-function "generate-documentation"
+                                 :package '#:com.kjcjohnson.ks2.cli)
+           filename))

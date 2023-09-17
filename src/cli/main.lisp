@@ -270,3 +270,14 @@
   (let ((app (ks2/command))
         (*features* (remove :swank *features*))) ; So CLINGON:EXIT works
     (clingon:run app)))
+
+(defun generate-documentation (filename)
+  "Prints documentation about ks2 to FILENAME"
+  (if (string= filename "-")
+      (clingon:print-documentation :markdown (ks2/command) *standard-output*)
+      (progn
+        (ensure-directories-exist filename)
+        (with-open-file (out filename :direction :output
+                                      :if-exists :supersede
+                                      :if-does-not-exist :create)
+          (clingon:print-documentation :markdown (ks2/command) out)))))
