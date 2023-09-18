@@ -3,6 +3,13 @@
 ;;;;
 (in-package #:com.kjcjohnson.ks2.solving)
 
+(define-condition solver-config-error (simple-error) ()
+  (:documentation "A condition thrown when a solver configuration is wrong"))
+
+(defun solver-config-error (format &rest args)
+  "Signals a solver-config-error"
+  (error 'solver-config-error :format-control format :format-arguments args))
+
 (defclass solver-config ()
   ((solver :accessor solver
            :initarg :solver
@@ -62,11 +69,12 @@
   (let ((normalized nil))
     (loop for designator in (runner::list-solvers child-lisp)
           for symbols = (runner::solver-symbols child-lisp designator)
+          do (v:trace :solving "Designator: ~a, symbols: ~a" designator symbols)
           when (or (eql (solver solver-config) designator)
                    (find (solver solver-config) symbols :test #'string-equal))
             do (setf normalized designator))
     (if (null normalized)
-        (error "Invalid solver: ~a" (solver solver-config))
+        (solver-config-error "Invalid solver: ~a" (solver solver-config))
         (setf (solver solver-config) normalized))))
 
 (defun validate-solver-options (child-lisp solver-config)
@@ -84,12 +92,13 @@
                 ("nil" nil)
                 ("no" nil)
                 ("false" nil)
-                (otherwise (error "Invalid Boolean solver option: ~a" value))))))
+                (otherwise (solver-config-error
+                            "Invalid Boolean solver option: ~a" value))))))
          (parse-number-option (value)
            (handler-case
                (parse-number:parse-number value)
              (parse-number:invalid-number ()
-               (error "Invalid Number solver option: ~a" value))))
+               (solver-config-error "Invalid Number solver option: ~a" value))))
          (self-or-first (x)
            (if (atom x) x (first x)))
          (parse-member-option (value type)
@@ -97,8 +106,9 @@
                  when (string-equal (string opt) (string value)) do
                    (return opt)
                  end
-                 finally (error "Invalid Member solver option: ~a (not in ~a)"
-                                value (rest type)))))
+                 finally (solver-config-error
+                          "Invalid Member solver option: ~a (not in ~a)"
+                          value (rest type)))))
 
     (let ((available-options
             (runner::solver-options child-lisp (solver solver-config)))
@@ -108,9 +118,9 @@
                             :key (a:compose #'symbol-name
                                             #'s-api::solver-option-keyword)
                             :test #'string-equal)
-            for type = (s-api::solver-option-type opt)
+            for type = (and opt (s-api::solver-option-type opt))
             unless opt
-              do (error "Invalid solver option: ~a" key)
+              do (solver-config-error "Invalid solver option: ~a" key)
             end
             do (push (s-api::solver-option-keyword opt) opt-plist)
                (push (ecase (self-or-first type)
