@@ -74,7 +74,7 @@
                    (find (solver solver-config) symbols :test #'string-equal))
             do (setf normalized designator))
     (if (null normalized)
-        (solver-config-error "Invalid solver: ~a" (solver solver-config))
+        (solver-config-error "invalid solver: ~a" (solver solver-config))
         (setf (solver solver-config) normalized))))
 
 (defun validate-solver-options (child-lisp solver-config)
@@ -93,12 +93,12 @@
                 ("no" nil)
                 ("false" nil)
                 (otherwise (solver-config-error
-                            "Invalid Boolean solver option: ~a" value))))))
+                            "invalid Boolean solver option: ~a" value))))))
          (parse-number-option (value)
            (handler-case
                (parse-number:parse-number value)
              (parse-number:invalid-number ()
-               (solver-config-error "Invalid Number solver option: ~a" value))))
+               (solver-config-error "invalid number solver option: ~a" value))))
          (self-or-first (x)
            (if (atom x) x (first x)))
          (parse-member-option (value type)
@@ -107,7 +107,7 @@
                    (return opt)
                  end
                  finally (solver-config-error
-                          "Invalid Member solver option: ~a (not in ~a)"
+                          "invalid member solver option: ~a (not in ~a)"
                           value (rest type)))))
 
     (let ((available-options
@@ -120,7 +120,7 @@
                             :test #'string-equal)
             for type = (and opt (s-api::solver-option-type opt))
             unless opt
-              do (solver-config-error "Invalid solver option: ~a" key)
+              do (solver-config-error "invalid solver option: ~a" key)
             end
             do (push (s-api::solver-option-keyword opt) opt-plist)
                (push (ecase (self-or-first type)

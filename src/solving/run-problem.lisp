@@ -136,6 +136,11 @@ report on some statistics when a solving run crashes.")
                           (make-problem-result-for-crash (name problem)
                                               (name solver)
                                               :live *live-data-stash*))))
+                  (solver-config-error
+                    #'(lambda (e)
+                        (force-output)
+                        (format *error-output* "error: ~a" e)
+                        (error "error: fatal configuration error")))
                   (error
                     #'(lambda (e)
                         (v:error :solving
