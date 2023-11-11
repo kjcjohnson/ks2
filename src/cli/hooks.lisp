@@ -7,7 +7,8 @@
   "Stops the global logger"
   (v:stop v:*global-controller*)
   ;; Apparently the controller won't stop unless it gets another message
-  (v:trace :ks2.cli "Stopping global logging controller..."))
+  (v:trace :ks2.cli "Stopping global logging controller...")
+  (sleep 1))
 
 (defun start-logger ()
   "Starts the global logger"

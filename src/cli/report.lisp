@@ -381,10 +381,13 @@ on TABLE with REPORTER to STREAM."))
   (loop for row across (rows table)
         do (write-report-table-row reporter ss row table)))
 
+(defclass reporter () ()
+  (:documentation "A generic report writer"))
+
 ;;;
 ;;; The HTML reporter
 ;;;
-(defclass html-reporter ()
+(defclass html-reporter (reporter)
   ()
   (:documentation "A reporter that writes HTML"))
 
@@ -466,7 +469,7 @@ on TABLE with REPORTER to STREAM."))
 ;;;
 ;;; Text reporter
 ;;;
-(defclass text-reporter ()
+(defclass text-reporter (reporter)
   ((column-widths :accessor column-widths
                   :initarg :column-widths
                   :type (vector integer)

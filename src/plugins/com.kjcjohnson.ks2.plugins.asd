@@ -5,4 +5,5 @@
   :depends-on ("systems.duck.plugboard"
                "com.kjcjohnson.ks2/app")
   :serial t
-  :components ((:file "report-style")))
+  :components ((:file "report-style")
+               (:file "report-merge-tables")))
