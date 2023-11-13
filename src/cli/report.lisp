@@ -39,6 +39,15 @@ passing to the formatting code")
             :documentation "Alist of raw field options"))
   (:documentation "A specific point of data in a report"))
 
+(defun report-field-descriptor-equal (rfd1 rfd2)
+  "Checks if RFD1 is equal to RFD2"
+  (and (eql (id rfd1) (id rfd2))
+       (string= (name rfd1) (name rfd2))
+       (string= (location rfd1) (location rfd2))
+       (string= (field-format rfd1) (field-format rfd2))
+       (eql (field-transformer rfd1) (field-transformer rfd2))
+       (equal (field-options rfd1) (field-options rfd2))))
+
 (defmethod print-object ((obj report-field-descriptor) stream)
   (print-unreadable-object (obj stream)
     (format stream "RFD: ~a" (id obj))))
@@ -224,7 +233,8 @@ passing to the formatting code")
   (:documentation "Returns a list of fields required by STYLE")
   (:method (style) nil))
 
-(defun parse-report-into-table (data &optional (fields '("summary")) solvers styles)
+(defmethod parse-report-into-table (reporter data
+                                    &optional (fields '("summary")) solvers styles)
   "Parses suite data in DATA (as a hash table) into a report object, with the specified
 list of FIELDS. If FIELDS is NIL, only includes the summary field"
   (declare (ignore solvers))
@@ -299,21 +309,29 @@ list of FIELDS. If FIELDS is NIL, only includes the summary field"
              (setf curr-table (iter-1 key curr-table))
           finally (return curr-table))))
 
+(defgeneric reporter-want-pathname (reporter)
+  (:documentation "Returns T if the reporter wants a pathname instead of a stream")
+  (:method (reporter) nil))
 
 (defun invoke-report (reporter json-files output-file fields solvers styles)
   "Processes result files into a combined report"
   (map-into json-files #'u:rationalize-namestring json-files)
-  (let ((data (loop for file in json-files
-                    collect (parse-report-into-table (jzon:parse file)
-                                                     fields
-                                                     solvers
-                                                     styles)))
-        (reporter (make-instance reporter)))
-    (if (null output-file)
-        (write-report reporter *standard-output* data)
-        (uiop:with-output-file (ss (u:rationalize-namestring output-file)
-                                   :if-exists :supersede)
-          (write-report reporter ss data)))))
+  (let* ((reporter (make-instance reporter
+                                  :styles (map 'list #'make-report-style styles)))
+         (data (loop for file in json-files
+                     collect (parse-report-into-table
+                              reporter
+                              (jzon:parse file)
+                              fields
+                              solvers
+                              styles))))
+    (if (reporter-want-pathname reporter)
+        (write-report reporter (u:rationalize-namestring output-file) data)
+        (if (null output-file)
+            (write-report reporter *standard-output* data)
+            (uiop:with-output-file (ss (u:rationalize-namestring output-file)
+                                       :if-exists :supersede)
+              (write-report reporter ss data))))))
 
 (defgeneric write-report-header (reporter stream)
   (:documentation "Writes a report header with REPORTER to STREAM."))
@@ -381,7 +399,10 @@ on TABLE with REPORTER to STREAM."))
   (loop for row across (rows table)
         do (write-report-table-row reporter ss row table)))
 
-(defclass reporter () ()
+(defclass reporter ()
+  ((styles :initarg :styles
+           :reader styles
+           :documentation "Report style strings"))
   (:documentation "A generic report writer"))
 
 ;;;
@@ -566,3 +587,149 @@ on TABLE with REPORTER to STREAM."))
     (format stream "| ~a~a "
             value
             (make-string (- width (length value)) :initial-element #\Space))))
+
+;;;
+;;; Cactus reporter
+;;;
+(defclass cactus-reporter (reporter)
+  ()
+  (:documentation "A reporter for creating cactus plots"))
+
+(defmethod parse-report-into-table :around ((reporter cactus-reporter) data
+                                            &optional fields solvers styles)
+  (if (find "status" fields :test #'string=)
+      (call-next-method)
+      (call-next-method reporter data (cons "status" fields) solvers styles)))
+
+(defmethod reporter-want-pathname ((reporter cactus-reporter)) t)
+
+(defmethod write-report ((reporter cactus-reporter) output-path data)
+  "Writes a cactus report"
+  (when (null data)
+    (error "Cannot write an empty cactus plot"))
+
+  (flet ((get-table-field (table)
+           (let ((fields (field-descriptors table)))
+             (loop for field across fields
+                   unless (eql :status (id field))
+                     do (return-from get-table-field field)))))
+    ;;
+    ;; Checks: all tables have the same solvers and the same (one) field
+    ;;         but note that we'll also have the status field, so two
+    ;;
+    (unless (= 2 (length (field-descriptors (first data))))
+      (error "Cactus reports can only have one field"))
+    (let ((solvers (sort (solvers (first data)) #'string<))
+          (field (get-table-field (first data))))
+      (loop for table in (rest data)
+            unless (equalp solvers (sort (solvers table) #'string<))
+              do (error "Solvers not the same in table")
+            unless (and (= 2 (length (field-descriptors table)))
+                        (report-field-descriptor-equal
+                         field (get-table-field table)))
+              do (error "All tables must have the same field"))
+      ;;
+      ;; Create a vector of vectors mapping solver -> benchmark values
+      ;;
+      (let* ((row-count (reduce #'+ data :key #'(lambda (x)
+                                                  (length (rows x)))))
+             (columns (map 'vector #'(lambda (x)
+                                       (declare (ignore x))
+                                       (make-array row-count :initial-element nil))
+                           solvers))
+             (row-ix 0))
+        ;;
+        ;; Collect all of the data into columns for each solver
+        ;;   Note that we only consider solved benchmarks here!
+        ;;
+        (loop for table in data do
+          (loop for row across (rows table) do
+            (loop for entry across (entries row)
+                  for solver-ix = (position (solver entry) solvers :test #'string=)
+                  for status-ix = (position :status (field-descriptors entry)
+                                            :key #'id)
+                  for value-ix = (- 1 status-ix) ;; status-ix either 0 or 1
+                  do
+                     (when (string= "SOLVED" (elt (field-values entry) status-ix))
+                       (setf (aref (elt columns solver-ix) row-ix)
+                             (read-from-string (elt (field-values entry) value-ix)))))
+            (incf row-ix)))
+        ;;
+        ;; Create a virtual "best" solver column
+        ;;
+        (let ((virtual-best (make-array row-count :initial-element nil)))
+          (flet ((null-min (&rest numbers)
+                   (let ((min nil))
+                     (loop for x in numbers
+                           if (and (not (null x))
+                                   (or (null min)
+                                       (< x min)))
+                             do (setf min x))
+                     min)))
+            (loop for ix from 0 below row-count
+                  do
+                     (setf (aref virtual-best ix)
+                           (apply #'null-min (map 'list #'(lambda (x) (aref x ix))
+                                                  columns)))))
+          ;;
+          ;; Each column is sorted independently to create the cactus plot
+          ;;   Note that we force NILs to the end - they won't be in the plot
+          ;;
+          (flet ((cactus-sort (v)
+                   (sort v #'(lambda (a b)
+                               (cond ((null a) nil)
+                                     ((null b) t)
+                                     (t (< a b)))))))
+            (map-into columns #'cactus-sort columns)
+            (setf virtual-best (cactus-sort virtual-best)))
+          ;;
+          ;; gnuplot time!
+          ;;
+          (let ((gp:*gnuplot-home* (namestring
+                                    (u:locate-exe "gnuplot"
+                                                  :hint-path #P"d:/bin/gnuplot/bin/")))
+                (scale (/ 1280 640)))
+            (when (null gp:*gnuplot-home*)
+              (error "Unable to find gnuplot on the system!"))
+
+            (gp:with-plots (s :debug nil)
+              (gp:gp :set :terminal '(pngcairo)
+                          :size :|1280,960|
+                     :fontscale scale
+                     :linewidth scale
+                     :pointscale scale)
+              (gp:gp :set :output output-path)
+              (gp:gp :set :xlabel "Benchmark Count")
+              (gp:gp :set :ylabel (name field))
+              (gp:gp :set :xrange (list 0 row-count))
+              (gp:gp :set :key :left :top)
+
+              (loop for ix from 0 below (length solvers)
+                    for solver = (elt solvers ix)
+                    for column = (elt columns ix)
+                    unless (let ((exclude-opt
+                                   (find "exclude" (styles reporter)
+                                         :key #'style-name
+                                         :test #'string-equal)))
+                             (and exclude-opt
+                                  (cdr (assoc solver (style-options exclude-opt)
+                                              :test #'string-equal))))
+                      do
+                         (gp:plot #'(lambda ()
+                                      (loop for val across column
+                                            for x from 0
+                                            until (null val)
+                                            do (format s "~&~a ~f" x val)))
+                                  :using '(1 2)
+                                  :title solver
+                                  :with '(:lines)))
+              (unless (find "no-virtual-best" (styles reporter)
+                            :key #'style-name :test #'string-equal)
+                (gp:plot #'(lambda ()
+                             (loop for val across virtual-best
+                                   for x from 0
+                                   until (null val)
+                                   do (format s "~&~a ~f" x val)))
+                         :using '(1 2)
+                         :title "Virtual Best"
+                         :with '(:lines))))))))))

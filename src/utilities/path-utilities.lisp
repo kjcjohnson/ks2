@@ -16,7 +16,7 @@
     (map-into split-path
               (a:rcurry #'uiop:parse-native-namestring :ensure-directory t)
               split-path)))
-         
+
 (defun core-location ()
   "Attempts to get the location of the running Lisp core. Currently only on SBCL..."
   #+sbcl
@@ -28,11 +28,11 @@
   #-sbcl
   nil)
 
-(defun locate-exe (filename)
+(defun locate-exe (filename &key hint-path)
   "Locates an executable named FILENAME. The .exe suffix may be added on Windows."
   (if (uiop:os-windows-p)
-      (locate-file filename :optional-suffix "exe")
-      (locate-file filename)))
+      (locate-file filename :optional-suffix "exe" :hint-path hint-path)
+      (locate-file filename :hint-path hint-path)))
 
 (defun locate-file (filename &key optional-suffix hint-path
                                (use-path t) (use-coreloc t) (use-cwd nil))

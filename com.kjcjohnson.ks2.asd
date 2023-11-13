@@ -53,6 +53,7 @@
                "com.inuoe.jzon"
                "exit-hooks"
                "local-time"
+               "eazy-gnuplot"
                "com.kjcjohnson.ks2.runner"
                "com.kjcjohnson.ks2")
   :build-operation "program-op"

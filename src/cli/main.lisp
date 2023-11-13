@@ -179,7 +179,8 @@
     :env-vars '("KS2_REPORTER")
     :initial-value "html"
     :items '(("html" . html-reporter)
-             ("text" . text-reporter)))
+             ("text" . text-reporter)
+             ("cactus" . cactus-reporter)))
    (clingon:make-option
     :list
     :description "solvers to report on (multiple allowed)"
