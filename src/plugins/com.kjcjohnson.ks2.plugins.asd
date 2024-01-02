@@ -6,4 +6,5 @@
                "com.kjcjohnson.ks2/app")
   :serial t
   :components ((:file "report-style")
-               (:file "report-merge-tables")))
+               (:file "report-merge-tables")
+               (:file "report-median-tables")))
