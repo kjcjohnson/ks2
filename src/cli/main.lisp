@@ -180,7 +180,8 @@
     :initial-value "html"
     :items '(("html" . html-reporter)
              ("text" . text-reporter)
-             ("cactus" . cactus-reporter)))
+             ("cactus" . cactus-reporter)
+             ("compare" . comparison-reporter)))
    (clingon:make-option
     :list
     :description "solvers to report on (multiple allowed)"

@@ -177,6 +177,11 @@ passing to the formatting code")
             ("by-size" (mrfd :concrete-candidates-by-size
                              "~{[~a]: ~a~^, ~}" name
                              #'coerce-to-list))
+            ("max-size" (mrfd :concrete-candidates-by-size
+                              nil name #'(lambda (x)
+                                           (if (zerop (length x))
+                                               nil
+                                               (elt x 0)))))
             ("checkpoint-times" (mrfd :checkpoint-times
                                       "~{[~a]: ~,1f~^, ~}" name #'coerce-to-list))
             (otherwise (error "Unknown field: ~a" id))))))))
@@ -200,6 +205,18 @@ passing to the formatting code")
             :type list ; alist
             :documentation "Alist of style options"))
   (:documentation "A report style"))
+
+(defun get-report-style-option (styles name &optional option)
+  "Gets a report style option from STYLES, either a list of styles, table, or reporter"
+  (setf styles (etypecase styles
+                 (list styles)
+                 (report-table (styles styles))
+                 (reporter (styles styles))))
+  (let ((style (find name styles :test #'string-equal :key #'style-name)))
+    (when style
+      (if (null option)
+          style
+          (cdr (assoc option (style-options style) :test #'string-equal))))))
 
 (defclass report-style-provider () ()
   (:documentation "An extendable provider for report styles"))
@@ -642,15 +659,22 @@ on TABLE with REPORTER to STREAM."))
         ;; Collect all of the data into columns for each solver
         ;;   Note that we only consider solved benchmarks here!
         ;;
-        (loop for table in data do
+        (loop with include-all = (get-report-style-option reporter
+                                                          "include" "all")
+              with include-unsolved = (get-report-style-option reporter
+                                                               "include" "unsolved")
+              for table in data do
           (loop for row across (rows table) do
             (loop for entry across (entries row)
                   for solver-ix = (position (solver entry) solvers :test #'string=)
                   for status-ix = (position :status (field-descriptors entry)
                                             :key #'id)
                   for value-ix = (- 1 status-ix) ;; status-ix either 0 or 1
+                  for solved = (string= "SOLVED" (elt (field-values entry) status-ix))
                   do
-                     (when (string= "SOLVED" (elt (field-values entry) status-ix))
+                     (when (or include-all
+                               (and include-unsolved (not solved))
+                               (and (not include-unsolved) solved))
                        (setf (aref (elt columns solver-ix) row-ix)
                              (read-from-string (elt (field-values entry) value-ix)))))
             (incf row-ix)))
@@ -685,51 +709,315 @@ on TABLE with REPORTER to STREAM."))
           ;;
           ;; gnuplot time!
           ;;
-          (let ((gp:*gnuplot-home* (namestring
-                                    (u:locate-exe "gnuplot"
-                                                  :hint-path #P"d:/bin/gnuplot/bin/")))
-                (scale (/ 1280 640)))
-            (when (null gp:*gnuplot-home*)
-              (error "Unable to find gnuplot on the system!"))
+          (if (get-report-style-option reporter "opt" "data-only")
+              (with-open-file (fs output-path
+                                  :direction :output
+                                  :if-exists :supersede
+                                  :if-does-not-exist :create)
+                (format fs "Index  ")
+                (loop for ix from 0 below (length solvers)
+                      do (format fs "'~a'  " (elt solvers ix)))
+                (format fs "'Virtual Best'")
+                (fresh-line fs)
 
-            (gp:with-plots (s :debug nil)
-              (gp:gp :set :terminal '(pngcairo)
-                          :size :|1280,960|
-                     :fontscale scale
-                     :linewidth scale
-                     :pointscale scale)
-              (gp:gp :set :output output-path)
-              (gp:gp :set :xlabel "Benchmark Count")
-              (gp:gp :set :ylabel (name field))
-              (gp:gp :set :xrange (list 0 row-count))
-              (gp:gp :set :key :left :top)
+                (loop for row-ix from 0 below (length (elt columns 0))
+                      do (format fs "~a  " row-ix)
+                         (loop for col-ix from 0 below (length columns)
+                               do (format fs "~:[nan~;~:*~a~]  "
+                                          (elt (elt columns col-ix) row-ix)))
+                         (format fs "~:[nan~;~:*~a~]" (elt virtual-best row-ix))
+                         (fresh-line fs)))
 
-              (loop for ix from 0 below (length solvers)
-                    for solver = (elt solvers ix)
-                    for column = (elt columns ix)
-                    unless (let ((exclude-opt
-                                   (find "exclude" (styles reporter)
-                                         :key #'style-name
-                                         :test #'string-equal)))
-                             (and exclude-opt
-                                  (cdr (assoc solver (style-options exclude-opt)
-                                              :test #'string-equal))))
-                      do
-                         (gp:plot #'(lambda ()
-                                      (loop for val across column
-                                            for x from 0
-                                            until (null val)
-                                            do (format s "~&~a ~f" x val)))
-                                  :using '(1 2)
-                                  :title solver
-                                  :with '(:lines)))
-              (unless (find "no-virtual-best" (styles reporter)
-                            :key #'style-name :test #'string-equal)
-                (gp:plot #'(lambda ()
-                             (loop for val across virtual-best
-                                   for x from 0
-                                   until (null val)
-                                   do (format s "~&~a ~f" x val)))
-                         :using '(1 2)
-                         :title "Virtual Best"
-                         :with '(:lines))))))))))
+              (let ((gp:*gnuplot-home* (namestring
+                                        (u:locate-exe "gnuplot"
+                                                      :hint-path #P"d:/bin/gnuplot/bin/")))
+                    (scale (/ 1280 640)))
+                (when (null gp:*gnuplot-home*)
+                  (error "Unable to find gnuplot on the system!"))
+
+                (gp:with-plots (s :debug nil)
+                  (gp:gp :set :terminal '(pngcairo)
+                              :size :|1280,960|
+                         :fontscale scale
+                         :linewidth scale
+                         :pointscale scale)
+                  (gp:gp :set :output output-path)
+                  (gp:gp :set :xlabel "Benchmark Count")
+                  (gp:gp :set :ylabel (name field))
+                  (gp:gp :set :xrange (list 0 row-count))
+                  (gp:gp :set :key :left :top)
+
+                  (let ((title (get-report-style-option reporter "opt" "title")))
+                    (when title (gp:gp :set :title title)))
+
+
+                  (loop for ix from 0 below (length solvers)
+                        for solver = (elt solvers ix)
+                        for column = (elt columns ix)
+                        unless (let ((exclude-opt
+                                       (find "exclude" (styles reporter)
+                                             :key #'style-name
+                                             :test #'string-equal)))
+                                 (and exclude-opt
+                                      (cdr (assoc solver (style-options exclude-opt)
+                                                  :test #'string-equal))))
+                          do
+                             (gp:plot #'(lambda ()
+                                          (loop for val across column
+                                                for x from 0
+                                                until (null val)
+                                                do (format s "~&~a ~f" x val)))
+                                      :using '(1 2)
+                                      :title solver
+                                      :with '(:lines)))
+                  (unless (find "no-virtual-best" (styles reporter)
+                                :key #'style-name :test #'string-equal)
+                    (gp:plot #'(lambda ()
+                                 (loop for val across virtual-best
+                                       for x from 0
+                                       until (null val)
+                                       do (format s "~&~a ~f" x val)))
+                             :using '(1 2)
+                             :title "Virtual Best"
+                             :with '(:lines)))))))))))
+
+;;;
+;;; Comparison reporter
+;;;
+(defclass comparison-reporter (reporter)
+  ()
+  (:documentation "A reporter for comparing things on plots"))
+
+(defmethod parse-report-into-table :around ((reporter comparison-reporter) data
+                                            &optional fields solvers styles)
+  (if (find "status" fields :test #'string=)
+      (call-next-method)
+      (call-next-method reporter data (cons "status" fields) solvers styles)))
+
+(defmethod reporter-want-pathname ((reporter comparison-reporter)) t)
+
+(defmethod write-report ((reporter comparison-reporter) output-path data)
+  "Writes a cactus report"
+  (when (null data)
+    (error "Cannot write an empty comparison plot"))
+
+  (flet ((get-table-field (table)
+           (let ((fields (field-descriptors table)))
+             (loop for field across fields
+                   unless (eql :status (id field))
+                     do (return-from get-table-field field)))))
+    ;;
+    ;; Checks: all tables have the same solvers and the same (one) field
+    ;;         but note that we'll also have the status field, so two
+    ;;
+    (unless (= 2 (length (field-descriptors (first data))))
+      (error "Comparison reports can only have one field"))
+    (let ((solvers (solvers (first data)))
+          (field (get-table-field (first data))))
+
+      (let ((solvers-style (get-report-style-option reporter "solvers")))
+        (when solvers-style
+          (setf solvers
+                (delete-if-not #'(lambda (s)
+                                   (get-report-style-option reporter "solvers" s))
+                               solvers))))
+
+      (loop for table in (rest data)
+            unless t; (equalp solvers (solvers table))
+              do (error "Solvers not the same in table")
+            unless (and (= 2 (length (field-descriptors table)))
+                        (report-field-descriptor-equal
+                         field (get-table-field table)))
+              do (error "All tables must have the same field"))
+      ;;
+      ;; Create a vector of vectors mapping solver -> benchmark values
+      ;;
+      (let* ((row-count (reduce #'+ data :key #'(lambda (x)
+                                                  (length (rows x)))))
+             (columns (map 'vector #'(lambda (x)
+                                       (declare (ignore x))
+                                       (make-array row-count :initial-element nil))
+                           solvers))
+             (row-ix 0))
+        ;;
+        ;; Collect all of the data into columns for each solver
+        ;;   Note that we only consider solved benchmarks here!
+        ;;
+        (loop with include-all = (get-report-style-option reporter
+                                                          "include" "all")
+              with include-unsolved = (get-report-style-option reporter
+                                                               "include" "unsolved")
+              for table in data do
+          (loop for row across (rows table) do
+            (loop for entry across (entries row)
+                  for solver-ix = (position (solver entry) solvers :test #'string=)
+                  for status-ix = (position :status (field-descriptors entry)
+                                            :key #'id)
+                  for value-ix = (- 1 status-ix) ;; status-ix either 0 or 1
+                  for solved = (string= "SOLVED" (elt (field-values entry) status-ix))
+                  unless (null solver-ix)
+                  do
+                     (when (or include-all
+                               (and include-unsolved (not solved))
+                               (and (not include-unsolved) solved))
+                       (setf (aref (elt columns solver-ix) row-ix)
+                             (read-from-string (elt (field-values entry) value-ix)))))
+            (incf row-ix)))
+        ;;
+        ;; Create a virtual "best" solver column
+        ;;
+        (let ((virtual-best (make-array row-count :initial-element nil)))
+          (flet ((null-min (&rest numbers)
+                   (let ((min nil))
+                     (loop for x in numbers
+                           if (and (not (null x))
+                                   (or (null min)
+                                       (< x min)))
+                             do (setf min x))
+                     min)))
+            (loop for ix from 0 below row-count
+                  do
+                     (setf (aref virtual-best ix)
+                           (apply #'null-min (map 'list #'(lambda (x) (aref x ix))
+                                                  columns)))))
+          ;;
+          ;; Process and sort
+          ;;
+          (flet ((cactus-sort (v &key key)
+                   (sort v #'(lambda (a b)
+                               (cond ((null a) nil)
+                                     ((null b) t)
+                                     (t (< a b))))
+                         :key key)))
+            (let ((combined (apply #'map 'list #'list (coerce columns 'list))))
+              (setf combined (cactus-sort combined :key #'first))
+              (loop for x in combined
+                    for ix from 0
+                    do (loop for col from 0 below (length columns)
+                             do (setf (aref (aref columns col) ix)
+                                      (nth col x)))))
+
+            ;;
+            ;; Percent difference?
+            ;;
+            (let ((%diff-base (get-report-style-option reporter "opt" "%diff")))
+              (assert (= 2 (length columns)))
+              (when %diff-base
+                (let* ((sv-1 (or (and %diff-base
+                                      (position %diff-base solvers
+                                                :test #'string-equal))
+                                 0))
+                       (sv-2 (- 1 sv-1)))
+                  (setf columns
+                        (list
+                         (cactus-sort
+                          (map 'vector #'(lambda (x y)
+                                           (unless (or (null x)
+                                                       (null y))
+                                             (* 100
+                                                (/ (- x y)
+                                                   (/ (+ x y) 2)))))
+                               (elt columns sv-1)
+                               (elt columns sv-2)))))))))
+
+          (if (get-report-style-option reporter "opt" "data-only")
+              (with-open-file (fs output-path
+                                  :direction :output
+                                  :if-exists :supersede
+                                  :if-does-not-exist :create)
+                (format fs "Index  ")
+                (loop for ix from 0 below (length solvers)
+                      do (format fs "'~a'  " (elt solvers ix)))
+                ;;(format fs "'Virtual Best'")
+                (fresh-line fs)
+
+                (loop for row-ix from 0 below (length (elt columns 0))
+                      do (format fs "~a  " row-ix)
+                         (loop for col-ix from 0 below (length columns)
+                               do (format fs "~:[nan~;~:*~a~]  "
+                                          (elt (elt columns col-ix) row-ix)))
+                         ;;(format fs "~:[nan~;~:*~a~]" (elt virtual-best row-ix))
+                         (fresh-line fs)))
+
+              ;;
+              ;;
+              ;; gnuplot time!
+              ;;
+              (let ((gp:*gnuplot-home* (namestring
+                                        (u:locate-exe "gnuplot"
+                                                      :hint-path #P"d:/bin/gnuplot/bin/")))
+                    (scale (/ 1280 640))
+                    (x-length row-count))
+                (when (null gp:*gnuplot-home*)
+                  (error "Unable to find gnuplot on the system!"))
+
+                (when (get-report-style-option reporter "opt" "shrink-x")
+                  (let ((vb-end (position nil virtual-best))
+                        (others (map 'list
+                                     #'(lambda (r)
+                                         (position nil r))
+                                     columns)))
+                    (setf x-length (apply #'max vb-end others))))
+
+                (gp:with-plots (s :debug (get-report-style-option reporter "opt" "debug"))
+                  (gp:gp :set :terminal '(pngcairo)
+                              :size :|1280,960|
+                         :fontscale scale
+                         :linewidth scale
+                         :pointscale scale)
+                  (gp:gp :set :output output-path)
+                  (gp:gp :set :xlabel "Benchmark Count")
+                  (gp:gp :set :ylabel (or (get-report-style-option reporter
+                                                                   "opt" "ylabel")
+                                          (format nil "% difference in ~a"
+                                                  (name field))))
+                  (gp:gp :set :xrange (list 0 x-length))
+                  (gp:gp :set :key :left :top)
+
+                  (let ((title (get-report-style-option reporter "opt" "title")))
+                    (when title (gp:gp :set :title title)))
+
+
+                  (when (get-report-style-option reporter "opt" "zero-line")
+                    (gp:gp :set :xzeroaxis))
+
+                  (if (get-report-style-option reporter "opt" "%diff")
+                      (gp:plot #'(lambda ()
+                                   (loop for val across (first columns)
+                                         for x from 0
+                                         until (null val)
+                                         do (format s "~&~a ~f" x val)))
+                               :using '(1 2)
+                               :title (format nil "~a vs ~a"
+                                              (elt solvers 0) (elt solvers 1))
+                               :with '(:lines))
+
+                      (loop for ix from 0 below (length solvers)
+                            for solver = (elt solvers ix)
+                            for column = (elt columns ix)
+                            unless (let ((exclude-opt
+                                           (find "exclude" (styles reporter)
+                                                 :key #'style-name
+                                                 :test #'string-equal)))
+                                     (and exclude-opt
+                                          (cdr (assoc solver (style-options exclude-opt)
+                                                      :test #'string-equal))))
+                              do
+                                 (gp:plot #'(lambda ()
+                                              (loop for val across column
+                                                    for x from 0
+                                                    until (null val)
+                                                    do (format s "~&~a ~f" x val)))
+                                          :using '(1 2)
+                                          :title solver
+                                          :with '(:lines))))
+                  (unless (find "no-virtual-best" (styles reporter)
+                                :key #'style-name :test #'string-equal)
+                    (gp:plot #'(lambda ()
+                                 (loop for val across virtual-best
+                                       for x from 0
+                                       until (null val)
+                                       do (format s "~&~a ~f" x val)))
+                             :using '(1 2)
+                             :title "Virtual Best"
+                             :with '(:lines)))))))))))
