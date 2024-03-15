@@ -4,6 +4,7 @@
 (defpackage #:com.kjcjohnson.ks2.solving
   (:use #:cl)
   (:local-nicknames (#:ks2 #:com.kjcjohnson.ks2)
+                    (#:core #:systems.duck.ks2.core)
                     (#:runner #:com.kjcjohnson.ks2.runner)
                     (#:s-api #:com.kjcjohnson.ks2.solver-api)
                     (#:a #:alexandria)

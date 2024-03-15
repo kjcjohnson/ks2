@@ -6,8 +6,6 @@
 (defvar *core-output-stream* (make-synonym-stream '*standard-output*)
   "Stream to write core output to")
 
-(defvar *quiet* nil "Set to T when quiet mode is enabled")
-
 (defvar *live-data-stash* nil "A place for live data to be stashed, so that we can
 report on some statistics when a solving run crashes.")
 
@@ -34,15 +32,19 @@ report on some statistics when a solving run crashes.")
     (set-not-null :concrete-candidates-by-size
                   (runner:get-concrete-candidates-by-size child-lisp))
     (set-not-null :checkpoint-times
-                  (runner:get-checkpoint-times child-lisp))))
+                  (runner:get-checkpoint-times child-lisp))
+    (set-not-null :load-time
+                  (runner::get-load-time child-lisp))
+    (set-not-null :gc-run-time
+                  (runner::get-gc-run-time child-lisp))))
 
-(defun %run-problem (problem solver &key timeout)
+(defun %run-problem (problem solver core-cfg &key timeout)
   "Runs a benchmark on a solver."
-  (let (child-lisp)
+  (let (child-lisp core)
     (unwind-protect
          (progn
-           (setf child-lisp (runner::swank-spawn :output *core-output-stream*))
-           (runner::bootstrap-tdp child-lisp)
+           (setf core (core:start-core core-cfg :output *core-output-stream*))
+           (setf child-lisp (systems.duck.ks2.core.synthkit::child-lisp core))
            (validate-solver-options child-lisp solver)
            (runner::force-gc child-lisp)
            (let* ((initial-memory (runner::get-used-dynamic-space child-lisp))
@@ -73,7 +75,6 @@ report on some statistics when a solving run crashes.")
                                 (runner::ok-or-fail (lparallel:force result-promise))
                                 nil))
                     (exec-count (runner:get-execution-counter child-lisp))
-                    (exec-rate (/ exec-count time))
                     (concrete-count (runner:get-concrete-candidate-counter child-lisp))
                     (partial-count (runner:get-partial-candidate-counter child-lisp))
                     (cand-by-size (runner:get-concrete-candidates-by-size child-lisp))
@@ -82,6 +83,11 @@ report on some statistics when a solving run crashes.")
                     (program (getf result :program))
                     (program-as-smt (getf result :program-as-smt))
                     (real-time (getf result :time))
+                    (load-time (or (getf result :load-semgus-problem-time)
+                                   (getf *live-data-stash* :load-time)))
+                    (gc-run-time (or (getf result :gc-run-time)
+                                     (getf *live-data-stash* :gc-run-time)))
+                    (exec-rate (/ exec-count (- time load-time)))
                     (spec-types (getf result :spec-types))
                     (prune-candidates (getf result :prune-candidate-counter))
                     (prune-attempts (getf result :prune-attempt-counter))
@@ -97,6 +103,8 @@ report on some statistics when a solving run crashes.")
                                     (name solver)
                                     solved?
                                     (or real-time time)
+                                    load-time
+                                    (/ gc-run-time internal-time-units-per-second)
                                     memory
                                     (if (and (listp program) (= 1 (length program)))
                                         (first program)
@@ -113,9 +121,9 @@ report on some statistics when a solving run crashes.")
                                     prune-successes
                                     prune-ratio))))
       (unless (null child-lisp)
-        (runner::terminate-child child-lisp :urgent t)))))
+        (core:stop-core core :urgent t)))))
 
-(defun run-problem (problem solver &key timeout)
+(defun run-problem (problem solver core &key timeout)
   "Runs a synthesis problem"
   (declare (type problem problem))
   (let* ((*live-data-stash* nil)
@@ -151,5 +159,5 @@ report on some statistics when a solving run crashes.")
                                                            (name solver)
                                                            :live *live-data-stash*)))))
 
-               (%run-problem problem solver :timeout timeout)))))
+               (%run-problem problem solver core :timeout timeout)))))
     result))

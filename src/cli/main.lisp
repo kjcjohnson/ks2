@@ -45,6 +45,16 @@
    :key :core
    :env-vars '("KS2_CORE")))
 
+(defun %option/corelist ()
+  "Option for specifying multiple cores to use"
+  (clingon:make-option
+   :list
+   :description "core to use (multiple allowed)"
+   :short-name #\c
+   :long-name "core"
+   :key :cores
+   :env-vars '("KS2_CORE")))
+
 (defun %option/timeout ()
   "Option for specifying a timeout"
   (clingon:make-option
@@ -75,6 +85,7 @@
 (defun solve/handler (cmd)
   "Handler for solving problems"
   (let ((solver (clingon:getopt cmd :solver))
+        (core (core:make-core-config (clingon:getopt cmd :core)))
         (timeout (clingon:getopt cmd :timeout))
         (problems (clingon:command-arguments cmd)))
     (when (null solver)
@@ -84,6 +95,7 @@
       (format *error-output* "~&error: no problems to solve specified~%")
       (clingon:exit 1))
     (let* ((statuses (invoke-solve (sv:normalize-solver solver)
+                                   core
                                    problems
                                    :timeout timeout))
            (first-nz (find 0 statuses :test-not #'=)))
@@ -130,7 +142,7 @@
     :initial-value "data"
     :env-vars '("KS2_OUTPUT_PATH"))
    (%option/timeout)
-   (%option/core)))
+   (%option/corelist)))
 
 (defparameter *default-solvers* (list "bottom-up-enum"
                                       "top-down-enum"
@@ -141,6 +153,8 @@
   "Handler for benchmarking solvers"
   (let ((solvers (map 'list #'sv:normalize-solver
                       (clingon:getopt cmd :solvers *default-solvers*)))
+        (cores (map 'list #'core:make-core-config
+                    (clingon:getopt cmd :core)))
         (output-format (clingon:getopt cmd :output-format))
         (output-path (clingon:getopt cmd :output-path))
         (suite-dir (clingon:command-arguments cmd))
@@ -150,7 +164,28 @@
         (progn
           (format *error-output* "~&error: exactly one suite directory expected~%")
           (clingon:exit 1)))
-    (invoke-benchmark suite-dir solvers
+    ;; Validate cores and solvers
+    ;; There must either be 0, 1, or as many cores as solvers
+    ;; Unless there's only one solver, then multiple cores allowed
+    (if (< 1 (length solvers))
+        (cond
+          ((zerop (length cores))
+           (setf cores (map 'list #'core:make-core-config
+                            (make-list (length solvers) :initial-element ""))))
+          ((= 1 (length cores))
+           (setf cores
+                 (make-list (length solvers) :initial-element (first cores))))
+          ((not (= (length cores) (length solvers)))
+           (format *error-output* "~&error: solver and core list not equal length~%")
+           (clingon:exit 1)))
+        (cond
+          ((zerop (length cores))
+           (setf cores (list (core:make-core-config ""))))
+          ((< 1 (length cores))
+           (setf solvers
+                 (make-list (length cores) :initial-element (first solvers))))))
+
+    (invoke-benchmark suite-dir solvers cores
                       :output-format output-format
                       :output-path output-path
                       :timeout timeout)))

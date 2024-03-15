@@ -14,15 +14,15 @@
     (:unknown 8)
     (otherwise 9)))
 
-(defun invoke-solve (solver problems &key timeout)
-  "Invokes the solve command with SOLVER and PROBLEMS"
+(defun invoke-solve (solver core problems &key timeout)
+  "Invokes the solve command with SOLVER in CORE and PROBLEMS"
   (let ((statuses nil))
     (dolist (pr-path problems)
       (format t "~&~a:~%" pr-path)
       (let* ((problem (sv:make-problem
                        (u:rationalize-namestring pr-path)
                        :transformer #'ks2:ensure-sexp-benchmark-file))
-             (result (sv:run-problem problem solver :timeout timeout)))
+             (result (sv:run-problem problem solver core :timeout timeout)))
         (fresh-line)
         (sv:print-result result)
         (push (result-to-exit-code result) statuses)))

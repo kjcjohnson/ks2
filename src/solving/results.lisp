@@ -3,6 +3,8 @@
 ;;;;
 (in-package #:com.kjcjohnson.ks2.solving)
 
+(defvar *quiet* nil "Set to T when quiet mode is enabled")
+
 (deftype result-status ()
   "A status of a result"
   '(member
@@ -31,6 +33,14 @@
              :initarg :run-time
              :type number
              :documentation "Time (in seconds) it took the solver to produce a result")
+   (load-time :reader load-time
+              :initarg :load-time
+              :type number
+              :documentation "Time (in seconds) it took the solver to load the problem")
+   (gc-run-time :reader gc-run-time
+                :initarg :gc-run-time
+                :type number
+                :documentation "Time (in seconds) taken by the garbage collector")
    (peak-memory :reader peak-memory
                 :initarg :peak-memory
                 :type number
@@ -87,7 +97,8 @@
 
 (defun make-problem-result
     (name solver solved?
-     run-time peak-memory program program-as-smt verify-rate specification-types
+     run-time load-time gc-run-time peak-memory program program-as-smt verify-rate
+     specification-types
      concrete-candidate-counter partial-candidate-counter
      concrete-candidates-by-size checkpoint-times
      prune-candidate-counter prune-attempt-counter prune-success-counter
@@ -97,6 +108,8 @@
                  :name (string name)
                  :solver (string solver)
                  :run-time run-time
+                 :load-time load-time
+                 :gc-run-time gc-run-time
                  :peak-memory peak-memory
                  :program program
                  :program-as-smt program-as-smt
@@ -168,9 +181,11 @@
     (:solved
      (unless *quiet*
        (format t
-               "~&; RESULT: ~a~%;   TIME: ~,2fs~%;   MAX MEM OFFSET: ~,3fMiB~%;   PPS: ~,2fprog/s~%;   SPEC: ~{~a~^, ~}~%~%"
+               "~&; RESULT: ~a~%;   TIME: ~,2fs  (LOAD: ~,2fs; GC: ~,2fs)~%;   MAX MEM OFFSET: ~,3fMiB~%;   PPS: ~,2fprog/s~%;   SPEC: ~{~a~^, ~}~%~%"
                (program result)
                (run-time result)
+               (load-time result)
+               (gc-run-time result)
                (peak-memory result)
                (verify-rate result)
                (specification-types result)))

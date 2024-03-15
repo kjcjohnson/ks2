@@ -12,7 +12,9 @@
            #:get-statistics
            #:force-gc
            #:get-gc-run-time
+           #:get-load-time
            #:bootstrap-tdp
+           #:set-core-options
            #:enum-solve
            #:duet-solve
            #:frangel-solve

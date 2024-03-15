@@ -6,6 +6,8 @@
                "alexandria"
                "verbose"
                "parse-number"
+               "systems.duck.ks2.core"
+               "systems.duck.ks2.core/synthkit"
                "com.kjcjohnson.ks2/parser"
                "com.kjcjohnson.ks2/utilities"
                "com.kjcjohnson.ks2/solver-api")
@@ -30,11 +32,12 @@
                (:file "parser-interface" :depends-on ("package"))))
 
 (asdf:defsystem "com.kjcjohnson.ks2/utilities"
-  :depends-on ("str" "alexandria")
+  :depends-on ("str" "alexandria" "serapeum")
   :pathname "src/utilities"
   :serial t
   :components ((:file "package")
                (:file "option-strings")
+               (:file "config")
                (:file "path-utilities")
                (:file "pathname-utilities")))
 
@@ -54,6 +57,7 @@
                "exit-hooks"
                "local-time"
                "eazy-gnuplot"
+               "systems.duck.ks2.core"
                "com.kjcjohnson.ks2.runner"
                "com.kjcjohnson.ks2")
   :build-operation "program-op"

@@ -3,6 +3,7 @@
 ;;;;
 (in-package #:com.kjcjohnson.ks2.utilities)
 
+;; Q: if we get a string, e.g., 'test=1;or=2', should we treat it as ';test=1;or=2'?
 (defun parse-option-string (option-string)
   "Parses OPTION-STRING. Returns the primary piece and option alist as values"
   (let* ((pieces (str:split #\; option-string))
@@ -22,4 +23,5 @@
                   (setf value t)))
           end
           do (push (cons key value) options))
-    (values primary options)))
+    (values (if (str:empty? primary) nil primary)
+            options)))

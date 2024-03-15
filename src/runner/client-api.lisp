@@ -43,6 +43,10 @@
   "Gets the times associated with each checkpoint in a child lisp environment"
   (ok-or-fail (rpc-call/sync child-lisp '(helper:get-checkpoint-times))))
 
+(defun get-load-time (child-lisp)
+  "Gets the time it took to load the problem file in a child lisp environment"
+  (ok-or-fail (rpc-call/sync child-lisp '(helper:get-load-time))))
+
 (defun get-statistics (child-lisp)
   "Gets statistics from a child lisp environment"
   (ok-or-fail (rpc-call/sync child-lisp '(helper:get-statistics))))
@@ -64,6 +68,9 @@
 
 (defun load-problem-file (child-lisp problem-file)
   (ok-or-fail (rpc-call/sync child-lisp `(helper:load-problem-file ,problem-file))))
+
+(defun set-core-options (child-lisp opt-plist)
+  (ok-or-fail (rpc-call/sync child-lisp `(helper:set-core-options ,@opt-plist))))
 
 ;;;
 ;;; Solver API

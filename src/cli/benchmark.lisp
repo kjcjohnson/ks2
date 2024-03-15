@@ -7,17 +7,17 @@
   (:documentation "Writes RESULT with format FORMAT. OUTPUT-SPEC is either a
 directory pathname (to write to file), t to write to stdout, or nil for a string."))
 
-(defun invoke-benchmark (suite-dir solvers &key output-format output-path timeout)
+(defun invoke-benchmark (suite-dir solvers cores &key output-format output-path timeout)
   "Invokes a benchmark suite"
   (let ((suite-pathname (u:rationalize-namestring suite-dir :directory t))
         (output-pathname (u:rationalize-namestring output-path :directory t)))
     (unless (uiop:directory-exists-p suite-pathname)
       (error "suite directory ~a does not exist" suite-pathname))
-    
+
     (let* ((suite (sv:make-suite-from-directory
                    suite-pathname
                    :transformer #'ks2:ensure-sexp-benchmark-file))
-           (results (sv:run-suite suite solvers :timeout timeout)))
+           (results (sv:run-suite suite solvers cores :timeout timeout)))
       (write-result output-format results output-pathname))))
 
 
@@ -41,4 +41,3 @@ directory pathname (to write to file), t to write to stdout, or nil for a string
      (shasht:write-json result t))
     (t
      (error "Invalid output-spec: ~a" output-spec))))
-                                                                       

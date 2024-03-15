@@ -58,6 +58,9 @@
   #+sbcl sb-ext:*gc-run-time*
   #-sbcl nil)
 
+(defslimefun set-core-options (&key program-compile)
+  (setf ast:*use-program-compiler* program-compile))
+
 (defslimefun get-statistics ()
   (list
    :dynamic-space-used (sb-kernel:dynamic-usage)
@@ -65,7 +68,11 @@
    :gc-run-time sb-ext:*gc-run-time*
    :execution-counter ast:*execution-counter*
    :internal-real-time (get-internal-real-time)
-   :internal-run-time (get-internal-run-time)))
+   :internal-run-time (get-internal-run-time)
+   :load-semgus-problem-time semgus:*load-semgus-problem-time*))
+
+(defslimefun get-load-time ()
+  semgus:*load-semgus-problem-time*)
 
 (defslimefun bootstrap-tdp ()
   (unless (find :ks2-bootstrapped *features*)
@@ -206,7 +213,9 @@
    :checkpoint-times ast:*checkpoint-times*
    :prune-candidate-counter ast:*prune-candidate-counter*
    :prune-attempt-counter ast:*prune-attempt-counter*
-   :prune-success-counter ast:*prune-success-counter*))
+   :prune-success-counter ast:*prune-success-counter*
+   :gc-run-time #+sbcl sb-ext:*gc-run-time* #-sbcl nil
+   :load-semgus-problem-time semgus:*load-semgus-problem-time*))
 
 
 (defslimefun solve-problem
