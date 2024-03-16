@@ -16,7 +16,7 @@
         (loop for solver in solvers
               for core in cores do
           (format t "~&  --> ~a~%" solver)
-          (let ((result (run-problem problem core solver :timeout timeout)))
+          (let ((result (run-problem problem solver core :timeout timeout)))
             (setf (suite-result results (name solver) problem)
                   result))))
       results)))

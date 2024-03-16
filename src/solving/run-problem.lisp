@@ -125,7 +125,9 @@ report on some statistics when a solving run crashes.")
 
 (defun run-problem (problem solver core &key timeout)
   "Runs a synthesis problem"
-  (declare (type problem problem))
+  (declare (type problem problem)
+           (type solver-config solver)
+           (type core:core-config core))
   (let* ((*live-data-stash* nil)
          (result
            (block do-solve
