@@ -6,4 +6,7 @@
 bin/
 
 # Don't include parsed smoke test benchmarks
-t/smoke-tests/*.sexpr
+*.sexpr
+
+# Data files from test runs
+data/
