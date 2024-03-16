@@ -9,5 +9,5 @@
                     (#:v #:org.shirakumo.verbose)
                     (#:* #:serapeum/bundle))
   (:export #:core-class #:core #:core-config #:make-core-config #:make-core-option
-           #:spawn-core #:terminate-core #:core-options
+           #:spawn-core #:terminate-core #:core-options #:core-option-plist
            #:start-core #:stop-core))

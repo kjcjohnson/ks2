@@ -20,13 +20,18 @@
     :name "pc"
     :description "If true, use the program compiler"
     :type :boolean
+    :default nil)
+   (core:make-core-option
+    :keyword :debug-compile
+    :name "debug-compile"
+    :type :boolean
     :default nil)))
 
-(defmethod core:spawn-core ((core synthkit-core) &key output program-compile &allow-other-keys)
+(defmethod core:spawn-core ((core synthkit-core) &key output &allow-other-keys)
   "Spawns a synthkit core"
   (let ((child-lisp (runner::swank-spawn :output output)))
     (%set-child-lisp child-lisp core)
-    (runner::set-core-options child-lisp (list :program-compile program-compile))
+    (runner::set-core-options child-lisp (core:core-option-plist core))
     (runner::bootstrap-tdp child-lisp)))
 
 (defmethod core:terminate-core ((core synthkit-core) &key urgent)
