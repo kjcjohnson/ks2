@@ -87,7 +87,11 @@ report on some statistics when a solving run crashes.")
                                    (getf *live-data-stash* :load-time)))
                     (gc-run-time (or (getf result :gc-run-time)
                                      (getf *live-data-stash* :gc-run-time)))
-                    (exec-rate (/ exec-count (- time (or load-time 0))))
+                    ;; TIME starts from when we call the solver, so we need to
+                    ;;  subtract off the load time. REAL-TIME starts ticking
+                    ;;  after the problem is loaded.
+                    (exec-rate (/ exec-count (or real-time
+                                                 (- time (or load-time 0)))))
                     (spec-types (getf result :spec-types))
                     (prune-candidates (getf result :prune-candidate-counter))
                     (prune-attempts (getf result :prune-attempt-counter))
