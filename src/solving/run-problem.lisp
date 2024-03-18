@@ -36,7 +36,9 @@ report on some statistics when a solving run crashes.")
     (set-not-null :load-time
                   (runner::get-load-time child-lisp))
     (set-not-null :gc-run-time
-                  (runner::get-gc-run-time child-lisp))))
+                  (runner::get-gc-run-time child-lisp))
+    (set-not-null :check-program-time
+                  (runner::get-check-program-time child-lisp))))
 
 (defun %run-problem (problem solver core-cfg &key timeout)
   "Runs a benchmark on a solver."
@@ -87,6 +89,9 @@ report on some statistics when a solving run crashes.")
                                    (getf *live-data-stash* :load-time)))
                     (gc-run-time (or (getf result :gc-run-time)
                                      (getf *live-data-stash* :gc-run-time)))
+                    (check-program-time (or
+                                         (getf result :check-program-time)
+                                         (getf *live-data-stash* :check-program-time)))
                     ;; TIME starts from when we call the solver, so we need to
                     ;;  subtract off the load time. REAL-TIME starts ticking
                     ;;  after the problem is loaded.
@@ -109,6 +114,7 @@ report on some statistics when a solving run crashes.")
                                     (or real-time time)
                                     load-time
                                     (/ gc-run-time internal-time-units-per-second)
+                                    check-program-time
                                     memory
                                     (if (and (listp program) (= 1 (length program)))
                                         (first program)

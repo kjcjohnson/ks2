@@ -13,6 +13,7 @@
            #:force-gc
            #:get-gc-run-time
            #:get-load-time
+           #:get-check-program-time
            #:bootstrap-tdp
            #:set-core-options
            #:enum-solve

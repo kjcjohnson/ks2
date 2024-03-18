@@ -41,6 +41,10 @@
                 :initarg :gc-run-time
                 :type number
                 :documentation "Time (in seconds) taken by the garbage collector")
+   (check-program-time :reader check-program-time
+                       :initarg :check-program-time
+                       :type number
+                       :documentation "Time (in seconds) taken by checking programs")
    (peak-memory :reader peak-memory
                 :initarg :peak-memory
                 :type number
@@ -97,7 +101,8 @@
 
 (defun make-problem-result
     (name solver solved?
-     run-time load-time gc-run-time peak-memory program program-as-smt verify-rate
+     run-time load-time gc-run-time check-program-time peak-memory program
+     program-as-smt verify-rate
      specification-types
      concrete-candidate-counter partial-candidate-counter
      concrete-candidates-by-size checkpoint-times
@@ -110,6 +115,7 @@
                  :run-time run-time
                  :load-time load-time
                  :gc-run-time gc-run-time
+                 :check-program-time check-program-time
                  :peak-memory peak-memory
                  :program program
                  :program-as-smt program-as-smt
@@ -142,6 +148,9 @@
                  :name (string name)
                  :solver (string solver)
                  :run-time (%compute-live-run-time live)
+                 :load-time (getf live :load-time)
+                 :gc-run-time (getf live :gc-run-time)
+                 :check-program-time (getf live :check-program-time)
                  :peak-memory (getf live :max-memory)
                  :concrete-candidate-counter (getf live :concrete-candidate-counter)
                  :partial-candidate-counter (getf live :partial-candidate-counter)
@@ -181,10 +190,11 @@
     (:solved
      (unless *quiet*
        (format t
-               "~&; RESULT: ~a~%;   TIME: ~,2fs  (LOAD: ~,2fs; GC: ~,2fs)~%;   MAX MEM OFFSET: ~,3fMiB~%;   PPS: ~,2fprog/s~%;   SPEC: ~{~a~^, ~}~%~%"
+               "~&; RESULT: ~a~%;   TIME: ~,2fs  (LOAD: ~,2fs; CHECK: ~,2fs; GC: ~,2fs)~%;   MAX MEM OFFSET: ~,3fMiB~%;   PPS: ~,2fprog/s~%;   SPEC: ~{~a~^, ~}~%~%"
                (program result)
                (run-time result)
                (load-time result)
+               (check-program-time result)
                (gc-run-time result)
                (peak-memory result)
                (verify-rate result)

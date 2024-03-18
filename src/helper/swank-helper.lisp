@@ -12,7 +12,8 @@
                     (#:smt #:com.kjcjohnson.synthkit.smt)
                     (#:ast #:com.kjcjohnson.synthkit.ast)
                     (#:solver-api #:com.kjcjohnson.ks2.solver-api)
-                    (#:u #:com.kjcjohnson.ks2.utilities))
+                    (#:u #:com.kjcjohnson.ks2.utilities)
+                    (#:sku #:com.kjcjohnson.synthkit.utilities))
   (:export #:init-and-start-swank)
   (:import-from #:swank
                 #:defslimefun))
@@ -75,6 +76,9 @@
 (defslimefun get-load-time ()
   semgus:*load-semgus-problem-time*)
 
+(defslimefun get-check-program-time ()
+  (sku:get-timed-section-real-time semgus:*check-program-time*))
+
 (defslimefun bootstrap-tdp ()
   (unless (find :ks2-bootstrapped *features*)
     (proclaim '(optimize (speed 3) (debug 0)))
@@ -87,6 +91,7 @@
   (setf ast:*prune-attempt-counter* 0)
   (setf ast:*prune-success-counter* 0)
   (ast:clear-all-checkpoints)
+  (sku:reset-timed-section-time semgus:*check-program-time*)
   (trivial-garbage:gc :full t)
   (when (uiop:getenv "KS2_SMT_DEBUG")
     (setf cl-smt-lib:*smt-debug* t))
@@ -216,7 +221,8 @@
    :prune-attempt-counter ast:*prune-attempt-counter*
    :prune-success-counter ast:*prune-success-counter*
    :gc-run-time #+sbcl sb-ext:*gc-run-time* #-sbcl nil
-   :load-semgus-problem-time semgus:*load-semgus-problem-time*))
+   :load-semgus-problem-time semgus:*load-semgus-problem-time*
+   :check-program-time (sku:get-timed-section-real-time semgus:*check-program-time*)))
 
 
 (defslimefun solve-problem

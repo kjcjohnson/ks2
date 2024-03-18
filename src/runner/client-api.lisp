@@ -47,6 +47,10 @@
   "Gets the time it took to load the problem file in a child lisp environment"
   (ok-or-fail (rpc-call/sync child-lisp '(helper:get-load-time))))
 
+(defun get-check-program-time (child-lisp)
+  "Gets the accumlated time spent checking programs (in seconds)"
+  (ok-or-fail (rpc-call/sync child-lisp '(helper:get-check-program-time))))
+
 (defun get-statistics (child-lisp)
   "Gets statistics from a child lisp environment"
   (ok-or-fail (rpc-call/sync child-lisp '(helper:get-statistics))))
