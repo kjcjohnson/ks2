@@ -25,6 +25,11 @@
     :keyword :debug-compile
     :name "debug-compile"
     :type :boolean
+    :default nil)
+   (core:make-core-option
+    :keyword :force-semgus-verifier
+    :name "force-semgus-verifier"
+    :type :boolean
     :default nil)))
 
 (defmethod core:spawn-core ((core synthkit-core) &key output &allow-other-keys)

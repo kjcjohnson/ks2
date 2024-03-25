@@ -59,9 +59,11 @@
   #+sbcl sb-ext:*gc-run-time*
   #-sbcl nil)
 
-(defslimefun set-core-options (&key program-compile debug-compile &allow-other-keys)
+(defslimefun set-core-options (&key program-compile debug-compile force-semgus-verifier
+                                    &allow-other-keys)
   (setf ast:*use-program-compiler* program-compile)
-  (setf semgus:*debug-compile* debug-compile))
+  (setf semgus:*debug-compile* debug-compile)
+  (setf semgus:*force-semgus-verifier* force-semgus-verifier))
 
 (defslimefun get-statistics ()
   (list
