@@ -55,6 +55,10 @@
   "Gets statistics from a child lisp environment"
   (ok-or-fail (rpc-call/sync child-lisp '(helper:get-statistics))))
 
+(defun get-full-verifier-stats (child-lisp)
+  "Gets statistics from the full verifier"
+  (ok-or-fail (rpc-call/sync child-lisp '(helper:get-full-verifier-stats))))
+
 (defun bootstrap-tdp (child-lisp)
   "Bootstraps the TDP stuff in the child environment."
   (ok-or-fail (rpc-call/sync child-lisp '(helper:bootstrap-tdp))))

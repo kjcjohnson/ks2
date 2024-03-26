@@ -154,7 +154,7 @@
   (let ((solvers (map 'list #'sv:normalize-solver
                       (clingon:getopt cmd :solvers *default-solvers*)))
         (cores (map 'list #'core:make-core-config
-                    (clingon:getopt cmd :core)))
+                    (clingon:getopt cmd :cores)))
         (output-format (clingon:getopt cmd :output-format))
         (output-path (clingon:getopt cmd :output-path))
         (suite-dir (clingon:command-arguments cmd))
@@ -184,7 +184,7 @@
           ((< 1 (length cores))
            (setf solvers
                  (make-list (length cores) :initial-element (first solvers))))))
-
+    (format t "; CORES: ~a~%" cores)
     (invoke-benchmark suite-dir solvers cores
                       :output-format output-format
                       :output-path output-path

@@ -38,7 +38,11 @@ report on some statistics when a solving run crashes.")
     (set-not-null :gc-run-time
                   (runner::get-gc-run-time child-lisp))
     (set-not-null :check-program-time
-                  (runner::get-check-program-time child-lisp))))
+                  (runner::get-check-program-time child-lisp))
+    (let ((fvs (runner::get-full-verifier-stats child-lisp)))
+      (set-not-null :full-verifier-time (getf fvs :full-verifier-time))
+      (set-not-null :full-verifier-count (getf fvs :full-verifier-count))
+      (set-not-null :quick-verifier-count (getf fvs :quick-verifier-count)))))
 
 (defun %run-problem (problem solver core-cfg &key timeout)
   "Runs a benchmark on a solver."
@@ -129,7 +133,13 @@ report on some statistics when a solving run crashes.")
                                     prune-candidates
                                     prune-attempts
                                     prune-successes
-                                    prune-ratio))))
+                                    prune-ratio
+                                    (or (getf result :full-verifier-time)
+                                        (getf *live-data-stash* :full-verifier-time))
+                                    (or (getf result :full-verifier-count)
+                                        (getf *live-data-stash* :full-verifier-count))
+                                    (or (getf result :quick-verifier-count)
+                                        (getf *live-data-stash* :quick-verifier-count))))))
       (unless (null child-lisp)
         (core:stop-core core :urgent t)))))
 

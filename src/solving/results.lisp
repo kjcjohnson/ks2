@@ -96,7 +96,19 @@
    (prune-success-rate :reader prune-success-rate
                        :initarg :prune-success-rate
                        :type number
-                       :documentation "Ratio of successful prunes to all prunes"))
+                       :documentation "Ratio of successful prunes to all prunes")
+   (full-verifier-time :reader full-verifier-time
+                       :initarg :full-verifier-time
+                       :type number
+                       :documentation "Time taken by the full verifier")
+   (full-verifier-count :reader full-verifier-count
+                        :initarg :full-verifier-count
+                        :type number
+                        :documentation "Number of times the full verifier ran")
+   (quick-verifier-count :reader quick-verifier-count
+                         :initarg :quick-verifier-count
+                         :type number
+                         :documentation "Number of times the quick verifier ran"))
   (:documentation "Results from running a problem."))
 
 (defun make-problem-result
@@ -107,7 +119,8 @@
      concrete-candidate-counter partial-candidate-counter
      concrete-candidates-by-size checkpoint-times
      prune-candidate-counter prune-attempt-counter prune-success-counter
-     prune-success-rate)
+     prune-success-rate
+     full-verifier-time full-verifier-count quick-verifier-count)
   "Makes problem results"
   (make-instance 'problem-result
                  :name (string name)
@@ -133,7 +146,10 @@
                  :prune-candidate-counter prune-candidate-counter
                  :prune-attempt-counter prune-attempt-counter
                  :prune-success-counter prune-success-counter
-                 :prune-success-rate prune-success-rate))
+                 :prune-success-rate prune-success-rate
+                 :full-verifier-time full-verifier-time
+                 :full-verifier-count full-verifier-count
+                 :quick-verifier-count quick-verifier-count))
 
 (defun %compute-live-run-time (live)
   "Computes run-time from live data LIVE"

@@ -173,6 +173,9 @@ passing to the formatting code")
             ("prune-success-counter" (mrfd :prune-success-counter nil name))
             ("prune-success-rate" (mrfd :prune-success-rate "~,2f" name))
             ("prune-success" (mrfd :prune-success-rate "~,2f" name))
+            ("full-verifier-time" (mrfd :full-verifier-time "~,2f" name))
+            ("full-verifier-count" (mrfd :full-verifier-count nil name))
+            ("quick-verifier-count" (mrfd :quick-verifier-count nil name))
             ("concrete-candidates-by-size" (mrfd :concrete-candidates-by-size
                                                  "~{[~a]: ~a~^, ~}" name
                                                  #'coerce-to-list))

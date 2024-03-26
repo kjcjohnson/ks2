@@ -13,7 +13,8 @@
                     (#:ast #:com.kjcjohnson.synthkit.ast)
                     (#:solver-api #:com.kjcjohnson.ks2.solver-api)
                     (#:u #:com.kjcjohnson.ks2.utilities)
-                    (#:sku #:com.kjcjohnson.synthkit.utilities))
+                    (#:sku #:com.kjcjohnson.synthkit.utilities)
+                    (#:sgv #:com.kjcjohnson.synthkit.semgus.verifiers))
   (:export #:init-and-start-swank)
   (:import-from #:swank
                 #:defslimefun))
@@ -80,6 +81,12 @@
 
 (defslimefun get-check-program-time ()
   (sku:get-timed-section-real-time semgus:*check-program-time*))
+
+(defslimefun get-full-verifier-stats ()
+  (list
+   :full-verifier-time (sku:get-timed-section-real-time sgv::*full-check-section*)
+   :full-verifier-count sgv::*full-check-count*
+   :quick-verifier-count sgv::*quick-check-count*))
 
 (defslimefun bootstrap-tdp ()
   (unless (find :ks2-bootstrapped *features*)
@@ -224,7 +231,10 @@
    :prune-success-counter ast:*prune-success-counter*
    :gc-run-time #+sbcl sb-ext:*gc-run-time* #-sbcl nil
    :load-semgus-problem-time semgus:*load-semgus-problem-time*
-   :check-program-time (sku:get-timed-section-real-time semgus:*check-program-time*)))
+   :check-program-time (sku:get-timed-section-real-time semgus:*check-program-time*)
+   :full-verifier-time (sku:get-timed-section-real-time sgv::*full-check-section*)
+   :full-verifier-count sgv::*full-check-count*
+   :quick-verifier-count sgv::*quick-check-count*))
 
 
 (defslimefun solve-problem

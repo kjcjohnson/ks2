@@ -14,6 +14,7 @@
            #:get-gc-run-time
            #:get-load-time
            #:get-check-program-time
+           #:get-full-verifier-stats
            #:bootstrap-tdp
            #:set-core-options
            #:enum-solve
