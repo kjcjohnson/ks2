@@ -176,6 +176,7 @@ passing to the formatting code")
             ("full-verifier-time" (mrfd :full-verifier-time "~,2f" name))
             ("full-verifier-count" (mrfd :full-verifier-count nil name))
             ("quick-verifier-count" (mrfd :quick-verifier-count nil name))
+            ("check-program-time" (mrfd :check-program-time "~,2f" name))
             ("concrete-candidates-by-size" (mrfd :concrete-candidates-by-size
                                                  "~{[~a]: ~a~^, ~}" name
                                                  #'coerce-to-list))
