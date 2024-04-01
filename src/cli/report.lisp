@@ -196,10 +196,23 @@ passing to the formatting code")
   "Gets a report field from entries"
   (format nil
           (field-format field)
-          (funcall (field-transformer field)
-                   (if (string= "summary" (location field))
-                       summary-entry
-                       (%ih result-entry (location field))))))
+          (let ((val (funcall (field-transformer field)
+                              (if (string= "summary" (location field))
+                                  summary-entry
+                                  (%ih result-entry (location field))))))
+            (if (and (string= "verify-rate" (location field))
+                     (null val))
+                (let ((time (%ih result-entry "run-time"))
+                      (cand (%ih result-entry "concrete-candidate-counter")))
+                  (when (and time cand)
+                    (/ cand time)))
+                val))))
+
+(defclass reporter ()
+  ((styles :initarg :styles
+           :reader styles
+           :documentation "Report style strings"))
+  (:documentation "A generic report writer"))
 
 (defclass report-style ()
   ((name :reader style-name
@@ -422,12 +435,6 @@ on TABLE with REPORTER to STREAM."))
   (loop for row across (rows table)
         do (write-report-table-row reporter ss row table)))
 
-(defclass reporter ()
-  ((styles :initarg :styles
-           :reader styles
-           :documentation "Report style strings"))
-  (:documentation "A generic report writer"))
-
 ;;;
 ;;; The HTML reporter
 ;;;
@@ -620,16 +627,27 @@ on TABLE with REPORTER to STREAM."))
 
 (defmethod parse-report-into-table :around ((reporter cactus-reporter) data
                                             &optional fields solvers styles)
-  (if (find "status" fields :test #'string=)
-      (call-next-method)
-      (call-next-method reporter data (cons "status" fields) solvers styles)))
+  (let ((need-time (get-report-style-option reporter "include" "time-cutoff"))
+        (has-status (find "status" fields :test #'string=))
+        (has-time (or (find "time" fields :test #'string=)
+                      (find "run-time" fields :test #'string=))))
+    (if (and has-status (or (not need-time) has-time))
+        (call-next-method)
+        (progn
+          (unless has-status
+            (push "status" fields))
+          (unless (or (not need-time) has-time)
+            (push "run-time" fields))
+          (call-next-method reporter data fields solvers styles)))))
 
 (defmethod reporter-want-pathname ((reporter cactus-reporter)) t)
 
-(defmethod write-report ((reporter cactus-reporter) output-path data)
+(defmethod write-report ((reporter cactus-reporter) output-path data &aux tc)
   "Writes a cactus report"
   (when (null data)
     (error "Cannot write an empty cactus plot"))
+
+  (setf tc (get-report-style-option reporter "include" "time-cutoff"))
 
   (flet ((get-table-field (table)
            (let ((fields (field-descriptors table)))
@@ -639,9 +657,10 @@ on TABLE with REPORTER to STREAM."))
     ;;
     ;; Checks: all tables have the same solvers and the same (one) field
     ;;         but note that we'll also have the status field, so two
+    ;;         maybe 3 if we have time
     ;;
     (unless (= 2 (length (field-descriptors (first data))))
-      (error "Cactus reports can only have one field"))
+      (or tc (error "Cactus reports can only have one field")))
     (let ((solvers (sort (solvers (first data)) #'string<))
           (field (get-table-field (first data))))
       (loop for table in (rest data)
@@ -650,7 +669,7 @@ on TABLE with REPORTER to STREAM."))
             unless (and (= 2 (length (field-descriptors table)))
                         (report-field-descriptor-equal
                          field (get-table-field table)))
-              do (error "All tables must have the same field"))
+              do (or tc (error "All tables must have the same field")))
       ;;
       ;; Create a vector of vectors mapping solver -> benchmark values
       ;;
@@ -669,18 +688,44 @@ on TABLE with REPORTER to STREAM."))
                                                           "include" "all")
               with include-unsolved = (get-report-style-option reporter
                                                                "include" "unsolved")
+              with time-cutoff = (get-report-style-option reporter
+                                                          "include" "time-cutoff")
+              with exclude-zero = (get-report-style-option reporter
+                                                           "include" "no-zero")
               for table in data do
           (loop for row across (rows table) do
             (loop for entry across (entries row)
                   for solver-ix = (position (solver entry) solvers :test #'string=)
                   for status-ix = (position :status (field-descriptors entry)
                                             :key #'id)
-                  for value-ix = (- 1 status-ix) ;; status-ix either 0 or 1
+                  for time-ix = (and tc (position :run-time (field-descriptors entry)
+                                                  :key #'id))
+                  for value-ix = (or (and (not tc)
+                                          (- 1 status-ix)) ; status-ix either 0 or 1
+                                     (and (= 3 (length (field-descriptors entry)))
+                                          (position nil (field-descriptors entry)
+                                                    :key #'id
+                                                    :test
+                                                    (lambda (x y)
+                                                      (not (or (eql x :run-time)
+                                                               (eql x :status)
+                                                               (eql y :run-time)
+                                                               (eql y :status))))))
+                                     time-ix) ; time cutoff and time field
                   for solved = (string= "SOLVED" (elt (field-values entry) status-ix))
                   do
-                     (when (or include-all
-                               (and include-unsolved (not solved))
-                               (and (not include-unsolved) solved))
+                     (when (and (or include-all
+                                    (and include-unsolved (not solved))
+                                    (and (not include-unsolved) solved))
+                                (or (not time-cutoff)
+                                    (let ((runtime
+                                            (read-from-string
+                                             (elt (field-values entry) time-ix))))
+                                      (>= runtime 5)))
+                                (or (not exclude-zero)
+                                    (not (zerop
+                                          (read-from-string (elt (field-values entry)
+                                                                 value-ix))))))
                        (setf (aref (elt columns solver-ix) row-ix)
                              (read-from-string (elt (field-values entry) value-ix)))))
             (incf row-ix)))
