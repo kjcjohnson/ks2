@@ -216,7 +216,8 @@
     :items '(("html" . html-reporter)
              ("text" . text-reporter)
              ("cactus" . cactus-reporter)
-             ("compare" . comparison-reporter)))
+             ("compare" . comparison-reporter)
+             ("csv" . delimited-text-reporter)))
    (clingon:make-option
     :list
     :description "solvers to report on (multiple allowed)"

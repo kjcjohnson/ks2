@@ -1072,3 +1072,24 @@ on TABLE with REPORTER to STREAM."))
                              :using '(1 2)
                              :title "Virtual Best"
                              :with '(:lines)))))))))))
+
+;;;
+;;; Delimited text reporter (CSV, TSV, etc.)
+;;;
+(defclass delimited-text-reporter (reporter)
+  ()
+  (:documentation "A reporter for exporting data as delimited text"))
+
+(defmethod write-report-header ((reporter delimited-text-reporter) stream) t)
+(defmethod write-report-footer ((reporter delimited-text-reporter) stream) t)
+(defmethod write-report-table-header ((reporter delimited-text-reporter) stream table)
+  nil)
+
+(defmethod write-report-table-row ((reporter delimited-text-reporter)
+                                   ss row table)
+  "Writes a CSV row"
+  (let ((row-data (cons (benchmark row) nil)))
+    (loop for entry across (entries row)
+          do (loop for value across (field-values entry)
+                   do (push value row-data)))
+    (cl-csv:write-csv-row (nreverse row-data) :stream ss)))
