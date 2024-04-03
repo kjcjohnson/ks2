@@ -57,6 +57,7 @@
                "exit-hooks"
                "local-time"
                "eazy-gnuplot"
+               "cl-csv"
                "systems.duck.ks2.core"
                "com.kjcjohnson.ks2.runner"
                "com.kjcjohnson.ks2")
