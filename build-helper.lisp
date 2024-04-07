@@ -15,8 +15,8 @@
   (when optimize
     (asdf:oos 'asdf:compile-op "com.kjcjohnson.synthkit" :force t)
     (asdf:oos 'asdf:load-op "com.kjcjohnson.tdp/ks2" :force t))
-  (asdf:oos 'asdf:load-op "systems.duck.ks2.sygus")
-  (asdf:oos 'asdf:load-op "systems.duck.ks2.bue")
+  (ql:quickload "systems.duck.ks2.sygus")
+  (ql:quickload "systems.duck.ks2.bue")
   (asdf:oos 'asdf:image-op "com.kjcjohnson.ks2.runner/helper"))
 
 (defun build-app (&key public-release)
