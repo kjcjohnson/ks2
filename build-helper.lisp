@@ -6,7 +6,7 @@
 (defun build-core (&key disable-smt optimize)
   "Builds the core image"
   (when disable-smt (push :synthkit-disable-smt-solver *features*))
-  (ql:quickload "com.kjcjohnson.tdp/test")
+  (ql:quickload "com.kjcjohnson.tdp/ks2")
   (proclaim `(optimize
               ,@(case optimize
                  (:speed '((speed 3) (debug 0)))
@@ -14,7 +14,9 @@
                  (otherwise '((speed 1) (debug 2))))))
   (when optimize
     (asdf:oos 'asdf:compile-op "com.kjcjohnson.synthkit" :force t)
-    (asdf:oos 'asdf:load-op "com.kjcjohnson.tdp/test" :force t))
+    (asdf:oos 'asdf:load-op "com.kjcjohnson.tdp/ks2" :force t))
+  (asdf:oos 'asdf:load-op "systems.duck.ks2.sygus")
+  (asdf:oos 'asdf:load-op "systems.duck.ks2.bue")
   (asdf:oos 'asdf:image-op "com.kjcjohnson.ks2.runner/helper"))
 
 (defun build-app (&key public-release)
