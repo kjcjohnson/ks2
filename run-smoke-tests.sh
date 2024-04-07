@@ -50,7 +50,7 @@ done
 # Basic benchmarking tests
 #
 echo " --> Benchmarking test"
-$exe benchmark -s 'tde;name=Config A' -s 'tde;name=Config B' -c ';name=Core A' -c ';name=Core B' "${test_dir}/test_suite"
+$exe benchmark -s 'tde;name=Config A' -s 'bue;name=Config B' -c ';name=Core A' -c ';name=Core B' "${test_dir}/test_suite"
 if [ $? -ne 0 ]; then
     echo " --- FAIL: Benchmarking test"
     failure=true
