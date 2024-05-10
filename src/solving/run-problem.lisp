@@ -176,6 +176,7 @@ report on some statistics when a solving run crashes.")
                         (v:error :solving
                                  "Caught unknown condition while running a problem")
                         (v:error :solving e)
+                        (force-output *error-output*)
                         (return-from do-solve
                           (make-problem-result-for-unknown (name problem)
                                                            (name solver)
