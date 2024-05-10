@@ -30,6 +30,11 @@
     :keyword :force-semgus-verifier
     :name "force-semgus-verifier"
     :type :boolean
+    :default nil)
+   (core:make-core-option
+    :keyword :force-no-pbe-constraints
+    :name "force-no-pbe-constraints"
+    :type :boolean
     :default nil)))
 
 (defmethod core:spawn-core ((core synthkit-core) &key output &allow-other-keys)

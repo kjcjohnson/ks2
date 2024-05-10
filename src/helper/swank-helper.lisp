@@ -60,11 +60,14 @@
   #+sbcl sb-ext:*gc-run-time*
   #-sbcl nil)
 
-(defslimefun set-core-options (&key program-compile debug-compile force-semgus-verifier
+(defslimefun set-core-options (&key program-compile debug-compile
+                                    force-semgus-verifier force-no-pbe-constraints
                                     &allow-other-keys)
   (setf ast:*use-program-compiler* program-compile)
   (setf semgus:*debug-compile* debug-compile)
-  (setf semgus:*force-semgus-verifier* force-semgus-verifier))
+  (setf semgus:*force-semgus-verifier* force-semgus-verifier)
+  (setf com.kjcjohnson.synthkit.semgus.reader:*force-no-pbe-constraints*
+        force-no-pbe-constraints))
 
 (defslimefun get-statistics ()
   (list
