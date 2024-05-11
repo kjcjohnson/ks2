@@ -51,6 +51,14 @@
   "Gets the accumlated time spent checking programs (in seconds)"
   (ok-or-fail (rpc-call/sync child-lisp '(helper:get-check-program-time))))
 
+(defun get-cegis-time (child-lisp)
+  "Gets the accumulated time spent on CEGIS (in seconds)"
+  (ok-or-fail (rpc-call/sync child-lisp '(helper:get-cegis-time))))
+
+(defun get-cegis-count (child-lisp)
+  "Gets the number of CEGIS iterations done"
+  (ok-or-fail (rpc-call/sync child-lisp '(helper:get-cegis-count))))
+
 (defun get-statistics (child-lisp)
   "Gets statistics from a child lisp environment"
   (ok-or-fail (rpc-call/sync child-lisp '(helper:get-statistics))))

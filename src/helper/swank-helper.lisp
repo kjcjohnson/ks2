@@ -85,6 +85,12 @@
 (defslimefun get-check-program-time ()
   (sku:get-timed-section-real-time semgus:*check-program-time*))
 
+(defslimefun get-cegis-time ()
+  (sku:get-timed-section-real-time semgus:*cegis-time*))
+
+(defslimefun get-cegis-count ()
+  (sku:get-timed-section-hit-count semgus:*cegis-time*))
+
 (defslimefun get-full-verifier-stats ()
   (list
    :full-verifier-time (sku:get-timed-section-real-time sgv::*full-check-section*)
@@ -235,6 +241,8 @@
    :gc-run-time #+sbcl sb-ext:*gc-run-time* #-sbcl nil
    :load-semgus-problem-time semgus:*load-semgus-problem-time*
    :check-program-time (sku:get-timed-section-real-time semgus:*check-program-time*)
+   :cegis-time (sku:get-timed-section-real-time semgus:*cegis-time*)
+   :cegis-count (sku:get-timed-section-hit-count semgus:*cegis-time*)
    :full-verifier-time (sku:get-timed-section-real-time sgv::*full-check-section*)
    :full-verifier-count sgv::*full-check-count*
    :quick-verifier-count sgv::*quick-check-count*))

@@ -45,6 +45,14 @@
                        :initarg :check-program-time
                        :type number
                        :documentation "Time (in seconds) taken by checking programs")
+   (cegis-time :reader cegis-time
+               :initarg :cegis-time
+               :type number
+               :documentation "Time (in seconds) spent on CEGIS checks and cex gen")
+   (cegis-count :reader cegis-count
+                :initarg :cegis-count
+                :type number
+                :documentation "Number of CEGIS iterations")
    (peak-memory :reader peak-memory
                 :initarg :peak-memory
                 :type number
@@ -113,7 +121,8 @@
 
 (defun make-problem-result
     (name solver solved?
-     run-time load-time gc-run-time check-program-time peak-memory program
+     run-time load-time gc-run-time check-program-time cegis-time cegis-count
+     peak-memory program
      program-as-smt verify-rate
      specification-types
      concrete-candidate-counter partial-candidate-counter
@@ -129,6 +138,8 @@
                  :load-time load-time
                  :gc-run-time gc-run-time
                  :check-program-time check-program-time
+                 :cegis-time cegis-time
+                 :cegis-count cegis-count
                  :peak-memory peak-memory
                  :program program
                  :program-as-smt program-as-smt
@@ -167,6 +178,8 @@
                  :load-time (getf live :load-time)
                  :gc-run-time (getf live :gc-run-time)
                  :check-program-time (getf live :check-program-time)
+                 :cegis-time (getf live :cegis-time)
+                 :cegis-count (getf live :cegis-count)
                  :peak-memory (getf live :max-memory)
                  :concrete-candidate-counter (getf live :concrete-candidate-counter)
                  :partial-candidate-counter (getf live :partial-candidate-counter)

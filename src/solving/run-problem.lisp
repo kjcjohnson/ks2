@@ -39,6 +39,10 @@ report on some statistics when a solving run crashes.")
                   (runner::get-gc-run-time child-lisp))
     (set-not-null :check-program-time
                   (runner::get-check-program-time child-lisp))
+    (set-not-null :cegis-time
+                  (runner::get-cegis-time child-lisp))
+    (set-not-null :cegis-count
+                  (runner::get-cegis-count child-lisp))
     (let ((fvs (runner::get-full-verifier-stats child-lisp)))
       (set-not-null :full-verifier-time (getf fvs :full-verifier-time))
       (set-not-null :full-verifier-count (getf fvs :full-verifier-count))
@@ -96,6 +100,12 @@ report on some statistics when a solving run crashes.")
                     (check-program-time (or
                                          (getf result :check-program-time)
                                          (getf *live-data-stash* :check-program-time)))
+                    (cegis-time (or
+                                 (getf result :cegis-time)
+                                 (getf *live-data-stash* :cegis-time)))
+                    (cegis-count (or
+                                  (getf result :cegis-count)
+                                  (getf *live-data-stash* :cegis-count)))
                     ;; TIME starts from when we call the solver, so we need to
                     ;;  subtract off the load time. REAL-TIME starts ticking
                     ;;  after the problem is loaded.
@@ -119,6 +129,8 @@ report on some statistics when a solving run crashes.")
                                     load-time
                                     (/ gc-run-time internal-time-units-per-second)
                                     check-program-time
+                                    cegis-time
+                                    cegis-count
                                     memory
                                     (if (and (listp program) (= 1 (length program)))
                                         (first program)

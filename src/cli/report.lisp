@@ -177,6 +177,8 @@ passing to the formatting code")
             ("full-verifier-count" (mrfd :full-verifier-count nil name))
             ("quick-verifier-count" (mrfd :quick-verifier-count nil name))
             ("check-program-time" (mrfd :check-program-time "~,2f" name))
+            ("cegis-time" (mrfd :cegis-time "~,2f" name))
+            ("cegis-count" (mrfd :cegis-count nil name))
             ("concrete-candidates-by-size" (mrfd :concrete-candidates-by-size
                                                  "~{[~a]: ~a~^, ~}" name
                                                  #'coerce-to-list))

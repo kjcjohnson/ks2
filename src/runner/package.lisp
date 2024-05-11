@@ -14,6 +14,8 @@
            #:get-gc-run-time
            #:get-load-time
            #:get-check-program-time
+           #:get-cegis-time
+           #:get-cegis-count
            #:get-full-verifier-stats
            #:bootstrap-tdp
            #:set-core-options
